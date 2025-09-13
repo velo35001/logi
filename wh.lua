@@ -196,7 +196,7 @@ local OBJECT_NAMES = {
     "Pot Hotspot",
     "La Grande Combinasion",
     "Garama and Madundung",
-    "Secret Lucky Block",
+    "Secret Lucksfsfsfy Block",
     "Dragon Cannelloni",
     "Nuclearo Dinossauro",
     "Las Vaquitas Saturnitas",
