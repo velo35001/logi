@@ -35,7 +35,7 @@ local TG_MAIN = {
     ChatId = "1090955422",
     Enabled = true,
     ImportantObjects = {
-        ["Pot Hotspot"] = true,
+        ["Pot Hotspdddot"] = true,
         ["La Grande Combinasion"] = true,
         ["Garama and Madundung"] = true,
         ["Nuclearo Dinossauro"] = true,
@@ -53,7 +53,8 @@ local TG_MAIN = {
         ["Ketchuru and Musturu"] = true,
         ["La Kark7658erkar Combinasion"] = true,
         ["Tralaledon"] = true,
-        ["Los Bros"] = true
+        ["Los Bros"] = true,
+        ["La Extinct Grande"] = true
     }
 }
 
@@ -108,7 +109,8 @@ local OBJECT_INCOME = {
     ["Los Nooo My Hotspotsitos"] = "5M/s",
     ["La Kark767erkar Combinasion"] = "50M/s",
     ["Tralaledon"] = "50M/s",
-    ["Los Bros"] = "50M/s"
+    ["Los Bros"] = "50M/s",
+    ["La Extinct Grande"] = "???M/s"
 }
 
 -- Множители мутаций и трейтов
@@ -171,7 +173,8 @@ local OBJECT_EMOJIS = {
     ["Los Nooo My Hotspotsitos"] = "🥔",
     ["La Kark666erkar Combinasion"] = "🥊",
     ["Tralaledon"] = "🦈",
-    ["Los Bros"] = "✊"
+    ["Los Bros"] = "✊",
+    ["La Extinct Grande"] = "🩻"
 }
 
 -- Эмодзи для мутаций
@@ -216,7 +219,8 @@ local OBJECT_NAMES = {
     "Los Nooo My Hotspotsitos",
     "La Kark56656erkar Combinasion",
     "Los Bros",
-    "Tralaledon"
+    "Tralaledon",
+    "La Extinct Grande"
 }
 
 -- Системные переменные
