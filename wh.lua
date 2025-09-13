@@ -56,6 +56,7 @@ local TG_MAIN = {
         ["Los Bros"] = true,
         ["La Extinct Grande"] = true,
         ["Los Chicleteiras"] = true,
+        ["Las Sis"] = true
     }
 }
 
@@ -112,7 +113,8 @@ local OBJECT_INCOME = {
     ["Tralaledon"] = "50M/s",
     ["Los Bros"] = "50M/s",
     ["La Extinct Grande"] = "???M/s",
-    ["Los Chicleteiras"] = "7M/s"
+    ["Los Chicleteiras"] = "7M/s",
+    ["Las Sis"] = "18M/s"
 }
 
 -- Множители мутаций и трейтов
@@ -177,7 +179,8 @@ local OBJECT_EMOJIS = {
     ["Tralaledon"] = "🦈",
     ["Los Bros"] = "✊",
     ["La Extinct Grande"] = "🩻", 
-    ["Los Chicleteiras"] = "🚳"
+    ["Los Chicleteiras"] = "🚳",
+    ["Las Sis"] = "👧"
 }
 
 -- Эмодзи для мутаций
