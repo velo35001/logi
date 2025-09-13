@@ -35,7 +35,6 @@ local TG_MAIN = {
     ChatId = "1090955422",
     Enabled = true,
     ImportantObjects = {
-        ["Secret Lucky Block"] = true,
         ["Pot Hotspot"] = true,
         ["La Grande Combinasion"] = true,
         ["Garama and Madundung"] = true,
