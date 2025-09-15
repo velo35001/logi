@@ -109,9 +109,9 @@ local OBJECT_INCOME = {
     ["Ketchuru and Musturu"] = "50M/s",
     ["Los Nooo My Hotspotsitos"] = "5M/s",
     ["La Kark767erkar Combinasion"] = "50M/s",
-    ["Tralaledon"] = "50M/s",
-    ["Los Bros"] = "50M/s",
-    ["La Extinct Grande"] = "???M/s",
+    ["Tralaledon"] = "27.5M/s",
+    ["Los Bros"] = "24M/s",
+    ["La Extinct Grande"] = "23.5M/s",
     ["Los Chicleteiras"] = "7M/s",
     ["Las Sis"] = "18M/s"
 }
