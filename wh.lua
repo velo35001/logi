@@ -227,7 +227,8 @@ local OBJECT_NAMES = {
     "Los Bros",
     "Tralaledon",
     "La Extinct Grande",
-    "Los Chicleteiras"
+    "Los Chicleteiras",
+    "Las Sis"
 }
 
 -- Системные переменные
