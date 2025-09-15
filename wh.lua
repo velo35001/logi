@@ -39,7 +39,6 @@ local TG_MAIN = {
         ["La Grande Combinasion"] = true,
         ["Garama and Madundung"] = true,
         ["Nuclearo Dinossauro"] = true,
-        ["Chicleteira Bicicleteira"] = true,
         ["Dragon Cannelloni"] = true,
         ["Los Combinasionas"] = true,
         ["Los Hotspotsitos"] = true,
