@@ -147,7 +147,8 @@ local TRAIT_MULTIPLIERS = {
     ["Brazil"] = 6,
     ["Matteo Hat"] = 3.5,
     ["Rain"] = 1.5,
-    ["UFO"] = 3
+    ["UFO"] = 3,
+    ["Skeleton"] = 4
     
 }
 
