@@ -56,7 +56,8 @@ local TG_MAIN = {
         ["La Extinct Grande"] = true,
         ["Los Chicleteiras"] = true,
         ["Las Sis"] = true,
-        ["Tacorita Bicicleta"] = true
+        ["Tacorita Bicicleta"] = true,
+        ["Tictac Sahur"] = true
     }
 }
 
@@ -107,6 +108,7 @@ local OBJECT_INCOME = {
     ["Nooo My Hotspot"] = "1.5M/s",
     ["Spaghetti Tualetti"] = "60M/s",
     ["Strawberry Elephant"] = "250M/s",
+    ["Ketupat Kepat"] = "35M/s",
     ["Ketchuru and Musturu"] = "42.5M/s",
     ["Los Nooo My Hotssffsdsdpotsitos"] = "5M/s",
     ["La Kark767erkar Combinasion"] = "50M/s",
@@ -115,7 +117,8 @@ local OBJECT_INCOME = {
     ["La Extinct Grande"] = "23.5M/s",
     ["Los Chicleteiras"] = "7M/s",
     ["Las Sis"] = "18M/s",
-    ["Tacorita Bicicleta"] = "16.5M/s"
+    ["Tacorita Bicicleta"] = "16.5M/s",
+    ["Tictac Sahur"] = "37M/s"
 }
 
 -- Множители мутаций и трейтов
@@ -151,7 +154,8 @@ local TRAIT_MULTIPLIERS = {
     ["Rain"] = 1.5,
     ["UFO"] = 3,
     ["Skeleton"] = 4,
-    ["Spider"] = 4.5
+    ["Spider"] = 4.5,
+    
     
 }
 
@@ -189,7 +193,8 @@ local OBJECT_EMOJIS = {
     ["La Extinct Grande"] = "🩻", 
     ["Los Chicleteiras"] = "🚳",
     ["Las Sis"] = "👧",
-    ["Tacorita Bicicleta"] = "🌮"
+    ["Tacorita Bicicleta"] = "🌮",
+    ["Tictac Sahur"] = "🕰️"
 }
 
 -- Эмодзи для мутаций
@@ -237,7 +242,8 @@ local OBJECT_NAMES = {
     "La Extinct Grande",
     "Los Chicleteiras",
     "Las Sis",
-    "Tacorita Bicicleta"
+    "Tacorita Bicicleta",
+    "Tictac Sahur"
 }
 
 -- Системные переменные
