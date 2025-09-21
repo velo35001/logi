@@ -155,6 +155,7 @@ local TRAIT_MULTIPLIERS = {
     ["UFO"] = 3,
     ["Skeleton"] = 4,
     ["Spider"] = 4.5,
+    ["Sombrero"] = 5
     
     
 }
