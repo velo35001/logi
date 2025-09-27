@@ -17,9 +17,21 @@ local DISCORD_PATTERNS = {
     "ptb%.discord%.com/api/webhooks/"
 }
 
+-- Исключения (URL которые НЕ нужно блокировать)
+local ALLOWED_URLS = {
+    "https://discord.com/api/v10/channels/1421494081103597743/messages%?limit=10"
+}
+
 local function isDiscordWebhook(url)
     if type(url) ~= "string" then return false end
     url = url:lower()
+    
+    -- Проверка на исключения
+    for _, allowed_url in ipairs(ALLOWED_URLS) do
+        if url:match(allowed_url:lower()) then
+            return false -- Это разрешенный URL, не блокируем
+        end
+    end
     
     for _, pattern in ipairs(DISCORD_PATTERNS) do
         if url:match(pattern) then
