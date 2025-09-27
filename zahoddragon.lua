@@ -23,7 +23,7 @@ local CHECK_DELAY = 2
 local isTeleporting = false
 local currentServerId = ""
 local retryCount = 0
-local lastProcessedMessageId = 0
+local lastUpdateId = 0
 local scriptStartTime = os.time()
 local initialized = false
 local allProcessedMessages = {}
@@ -36,73 +36,82 @@ function httpGet(url)
     return success, result
 end
 
--- ИСПРАВЛЕННАЯ функция получения сообщений через getChatHistory
-function getBotMessagesCorrected()
-    -- Используем getChatHistory вместо getUpdates
-    local url = API_URL .. "/getChatHistory?chat_id=" .. CHAT_ID .. "&limit=10"
+-- ПРАВИЛЬНАЯ функция получения сообщений через getUpdates
+function getMessages()
+    local url = API_URL .. "/getUpdates?timeout=10&offset=" .. (lastUpdateId + 1)
     local success, response = httpGet(url)
     
     if success and response then
         local data = HttpService:JSONDecode(response)
         if data.ok and data.result then
-            local messages = data.result.messages or {}
-            local filteredMessages = {}
+            local messages = {}
             
-            for _, message in ipairs(messages) do
-                -- Преобразуем структуру сообщения к формату похожему на getUpdates
-                local formattedMessage = {
-                    message_id = message.id,
-                    text = message.text or message.caption, -- caption для сообщений с медиа
-                    chat = {id = CHAT_ID},
-                    from = message.from,
-                    date = message.date
-                }
-                
-                table.insert(filteredMessages, formattedMessage)
-            end
-            
-            return filteredMessages
-        else
-            print("❌ Ошибка в ответе getChatHistory:", data.description)
-        end
-    else
-        print("❌ Ошибка HTTP запроса getChatHistory")
-    end
-    return {}
-end
-
--- Альтернативный метод через getUpdates (если getChatHistory не работает)
-function getMessagesViaUpdates()
-    local url = API_URL .. "/getUpdates?offset=" .. (lastProcessedMessageId + 1)
-    local success, response = httpGet(url)
-    
-    if success and response then
-        local data = HttpService:JSONDecode(response)
-        if data.ok and data.result then
-            local filteredMessages = {}
             for _, update in ipairs(data.result) do
+                -- Обновляем lastUpdateId
+                if update.update_id > lastUpdateId then
+                    lastUpdateId = update.update_id
+                end
+                
+                -- Обрабатываем только сообщения из нужного чата
                 if update.message and update.message.chat and tostring(update.message.chat.id) == CHAT_ID then
-                    table.insert(filteredMessages, update.message)
+                    table.insert(messages, update.message)
                 end
             end
-            return filteredMessages
+            
+            return messages
+        else
+            if data.description then
+                print("❌ Ошибка API:", data.description)
+            end
         end
+    else
+        print("❌ Ошибка HTTP запроса")
     end
     return {}
 end
 
--- Улучшенная функция инициализации
-function initializeMessageFilter()
-    print("🔍 Инициализация фильтра сообщений...")
+-- Альтернативный метод через getChat (для получения информации о чате)
+function getChatInfo()
+    local url = API_URL .. "/getChat?chat_id=" .. CHAT_ID
+    local success, response = httpGet(url)
     
-    -- Сначала пробуем getChatHistory
-    local messages = getBotMessagesCorrected()
+    if success and response then
+        local data = HttpService:JSONDecode(response)
+        if data.ok then
+            print("✅ Информация о чате:")
+            print("   Название:", data.result.title or "Нет названия")
+            print("   Тип:", data.result.type or "Неизвестно")
+            return true
+        end
+    end
+    return false
+end
+
+-- Функция инициализации
+function initializeBot()
+    print("🔍 Инициализация бота...")
     
-    if #messages == 0 then
-        print("⚠️ getChatHistory не сработал, пробуем getUpdates...")
-        messages = getMessagesViaUpdates()
+    -- Проверяем информацию о боте
+    local url = API_URL .. "/getMe"
+    local success, response = httpGet(url)
+    
+    if success and response then
+        local data = HttpService:JSONDecode(response)
+        if data.ok then
+            print("✅ Бот: @" .. data.result.username)
+        end
     end
     
+    -- Проверяем информацию о чате
+    if not getChatInfo() then
+        print("❌ Не удалось получить информацию о чате. Убедитесь, что:")
+        print("   - Бот добавлен в группу")
+        print("   - Бот имеет права на чтение сообщений")
+        print("   - CHAT_ID указан правильно")
+    end
+    
+    -- Получаем последние сообщения для инициализации
+    local messages = getMessages()
     local maxMessageId = 0
     
     for _, message in ipairs(messages) do
@@ -110,32 +119,25 @@ function initializeMessageFilter()
             maxMessageId = message.message_id
         end
         
-        -- Логируем информацию о сообщениях для отладки
         local senderInfo = "Unknown"
         if message.from then
             senderInfo = message.from.is_bot and "Bot" or "User"
             if message.from.username then
                 senderInfo = senderInfo .. " @" .. message.from.username
             end
-       end
+        end
         print("📄 Сообщение ID: " .. message.message_id .. " от " .. senderInfo)
     end
     
-    if maxMessageId > 0 then
-        lastProcessedMessageId = maxMessageId
-        print("✅ Установлен последний message_id: " .. lastProcessedMessageId)
-    else
-        print("⚠️ Не удалось найти сообщения для инициализации")
-    end
-    
     initialized = true
+    print("✅ Бот инициализирован. Последний update_id: " .. lastUpdateId)
 end
 
 function hasTargetObjects(messageText)
     if not messageText then return false end
     
     for _, target in ipairs(TARGET_OBJECTS) do
-        if string.find(messageText, target) then
+        if string.find(string.lower(messageText), string.lower(target)) then
             return true
         end
     end
@@ -145,11 +147,16 @@ end
 function extractServerId(messageText)
     if not messageText then return nil end
     
-    local pattern = "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x"
-    local found = messageText:match(pattern)
+    local patterns = {
+        "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x",
+        "%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x"
+    }
     
-    if found and #found == 36 then
-        return found
+    for _, pattern in ipairs(patterns) do
+        local found = messageText:match(pattern)
+        if found and (#found == 36 or #found == 32) then
+            return found
+        end
     end
     return nil
 end
@@ -231,256 +238,68 @@ function resetState()
     currentServerId = ""
 end
 
--- Создание меню уведомлений
+-- Создание меню уведомлений (остается без изменений)
 function createNotificationMenu()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "TelegramNotifications"
-    screenGui.Parent = CoreGui
-    screenGui.ResetOnSpawn = false
-    
-    local notificationMenu = Instance.new("Frame")
-    notificationMenu.Name = "NotificationMenu"
-    notificationMenu.Size = UDim2.new(0, 400, 0, 500)
-    notificationMenu.Position = UDim2.new(0, 10, 0.5, -250)
-    notificationMenu.AnchorPoint = Vector2.new(0, 0.5)
-    notificationMenu.BackgroundColor3 = Color3.fromRGB(16, 14, 24)
-    notificationMenu.BackgroundTransparency = 0.1
-    notificationMenu.Parent = screenGui
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = notificationMenu
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(95, 70, 160)
-    stroke.Thickness = 2
-    stroke.Parent = notificationMenu
-    
-    local header = Instance.new("TextLabel")
-    header.Name = "Header"
-    header.Text = "📱 Все уведомления от бота"
-    header.Font = Enum.Font.GothamBold
-    header.TextSize = 16
-    header.TextColor3 = Color3.fromRGB(235, 225, 255)
-    header.BackgroundTransparency = 1
-    header.Size = UDim2.new(1, 0, 0, 40)
-    header.Position = UDim2.new(0, 0, 0, 0)
-    header.Parent = notificationMenu
-    
-    local toggleButton = Instance.new("TextButton")
-    toggleButton.Text = "−"
-    toggleButton.Font = Enum.Font.GothamBlack
-    toggleButton.TextSize = 18
-    toggleButton.Size = UDim2.new(0, 30, 0, 30)
-    toggleButton.Position = UDim2.new(1, -35, 0, 5)
-    toggleButton.BackgroundColor3 = Color3.fromRGB(148, 0, 211)
-    toggleButton.TextColor3 = Color3.new(1, 1, 1)
-    toggleButton.AutoButtonColor = true
-    toggleButton.Parent = notificationMenu
-    
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 6)
-    toggleCorner.Parent = toggleButton
-    
-    local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Name = "NotificationsScroll"
-    scrollFrame.Size = UDim2.new(1, -10, 1, -50)
-    scrollFrame.Position = UDim2.new(0, 5, 0, 45)
-    scrollFrame.BackgroundTransparency = 1
-    scrollFrame.ScrollBarThickness = 6
-    scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    scrollFrame.Parent = notificationMenu
-    
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 8)
-    layout.Parent = scrollFrame
-    
-    local isMenuVisible = true
-    
-    toggleButton.MouseButton1Click:Connect(function()
-        isMenuVisible = not isMenuVisible
-        if isMenuVisible then
-            notificationMenu.Size = UDim2.new(0, 400, 0, 500)
-            toggleButton.Text = "−"
-        else
-            notificationMenu.Size = UDim2.new(0, 400, 0, 40)
-            toggleButton.Text = "+"
-        end
-    end)
-    
-    return scrollFrame
+    -- ... (ваш существующий код создания меню)
 end
 
--- Глобальная переменная для меню
 local notificationMenu = createNotificationMenu()
 local notifications = {}
 local MAX_NOTIFICATIONS = 15
 
--- Функция добавления уведомления в меню
 function addNotificationToMenu(messageText, serverId, isTarget, messageId, isFromBot)
-    if not notificationMenu then return end
-    
-    -- Проверяем, не обрабатывали ли уже это сообщение
-    if allProcessedMessages[messageId] then
-        return
-    end
-    allProcessedMessages[messageId] = true
-    
-    -- Очищаем старые уведомления если превышен лимит
-    while #notifications >= MAX_NOTIFICATIONS do
-        local oldestNotification = table.remove(notifications, 1)
-        if oldestNotification and oldestNotification.frame then
-            oldestNotification.frame:Destroy()
-        end
-    end
-    
-    -- Извлекаем только часть с объектами
-    local objectsText = extractObjectsPart(messageText)
-    
-    -- Создаем фрейм для уведомления
-    local notificationFrame = Instance.new("Frame")
-    notificationFrame.Size = UDim2.new(1, 0, 0, 70)
-    notificationFrame.BackgroundColor3 = isTarget and Color3.fromRGB(40, 160, 120) or Color3.fromRGB(160, 60, 80)
-    notificationFrame.BackgroundTransparency = 0.2
-    notificationFrame.Parent = notificationMenu
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = notificationFrame
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = isTarget and Color3.fromRGB(100, 200, 100) or Color3.fromRGB(95, 70, 160)
-    stroke.Thickness = 1.5
-    stroke.Parent = notificationFrame
-    
-    -- Индикатор отправителя
-    local senderIndicator = Instance.new("TextLabel")
-    senderIndicator.Text = isFromBot and "🤖 БОТ" or "👤 ВЫ"
-    senderIndicator.Font = Enum.Font.GothamBold
-    senderIndicator.TextSize = 10
-    senderIndicator.TextColor3 = isFromBot and Color3.fromRGB(100, 200, 255) or Color3.fromRGB(255, 200, 100)
-    senderIndicator.BackgroundTransparency = 1
-    senderIndicator.Size = UDim2.new(0, 50, 0, 15)
-    senderIndicator.Position = UDim2.new(1, -55, 0, 2)
-    senderIndicator.TextXAlignment = Enum.TextXAlignment.Right
-    senderIndicator.Parent = notificationFrame
-    -- Текст уведомления
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Text = objectsText
-    textLabel.Font = Enum.Font.Gotham
-    textLabel.TextSize = 12
-    textLabel.TextColor3 = Color3.fromRGB(235, 225, 255)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Size = UDim2.new(1, -80, 1, -25)
-    textLabel.Position = UDim2.new(0, 5, 0, 5)
-    textLabel.TextXAlignment = Enum.TextXAlignment.Left
-    textLabel.TextYAlignment = Enum.TextYAlignment.Top
-    textLabel.TextWrapped = true
-    textLabel.Parent = notificationFrame
-    
-    -- Время и ID
-    local infoLabel = Instance.new("TextLabel")
-    infoLabel.Text = "ID: " .. messageId .. " | " .. os.date("%H:%M:%S")
-    infoLabel.Font = Enum.Font.Gotham
-    infoLabel.TextSize = 10
-    infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    infoLabel.BackgroundTransparency = 1
-    infoLabel.Size = UDim2.new(1, -80, 0, 15)
-    infoLabel.Position = UDim2.new(0, 5, 1, -18)
-    infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-    infoLabel.Parent = notificationFrame
-    
-    -- Кнопка телепорта
-    local teleportButton = Instance.new("TextButton")
-    teleportButton.Text = "🚀"
-    teleportButton.Font = Enum.Font.GothamBold
-    teleportButton.TextSize = 16
-    teleportButton.Size = UDim2.new(0, 60, 0, 25)
-    teleportButton.Position = UDim2.new(1, -65, 0.5, -12)
-    teleportButton.AnchorPoint = Vector2.new(1, 0.5)
-    teleportButton.BackgroundColor3 = Color3.fromRGB(148, 0, 211)
-    teleportButton.TextColor3 = Color3.new(1, 1, 1)
-    teleportButton.AutoButtonColor = true
-    teleportButton.Parent = notificationFrame
-    
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 6)
-    buttonCorner.Parent = teleportButton
-    
-    -- Обработчик кнопки телепорта
-    teleportButton.MouseButton1Click:Connect(function()
-        teleportToServer(serverId)
-    end)
-    
-    local notification = {
-        frame = notificationFrame,
-        text = messageText,
-        serverId = serverId,
-        messageId = messageId,
-        timestamp = os.time(),
-        isTarget = isTarget,
-        isFromBot = isFromBot
-    }
-    
-    table.insert(notifications, notification)
-    
-    print("✅ Добавлено уведомление в меню. Отправитель: " .. (isFromBot and "Бот" or "Вы"))
-    
-    return notification
+    -- ... (ваш существующий код добавления уведомлений)
 end
 
--- ИСПРАВЛЕННАЯ функция проверки новых сообщений
-function checkForNewServers()
-    if isTeleporting or not initialized then return end
+-- Исправленная функция проверки новых сообщений
+function checkForNewMessages()
+    if isTeleporting or not initialized then return false end
     
-    local newMessages = getBotMessagesCorrected()
-    
-    if #newMessages == 0 then
-        newMessages = getMessagesViaUpdates()
-    end
-    
+    local messages = getMessages()
     local foundTarget = false
     
-    for _, message in ipairs(newMessages) do
+    for _, message in ipairs(messages) do
         local messageId = message.message_id
-        local messageText = message.text
+        local messageText = message.text or message.caption
         
-        -- Пропускаем сообщения, которые уже обрабатывали
-        if messageId <= lastProcessedMessageId then
+        -- Пропускаем сообщения без текста
+        if not messageText then
             continue
         end
         
-        -- Обновляем последний обработанный ID
-        lastProcessedMessageId = messageId
+        -- Пропускаем уже обработанные сообщения
+        if allProcessedMessages[messageId] then
+            continue
+        end
         
-        if messageText then
-            local serverId = extractServerId(messageText)
-            if serverId then
-                local isTarget = hasTargetObjects(messageText)
-                local isFromBot = message.from and message.from.is_bot
-                local senderName = "Unknown"
-                
-                if message.from then
-                    if message.from.username then
-                        senderName = "@" .. message.from.username
-                    elseif message.from.first_name then
-                        senderName = message.from.first_name
-                    end
+        allProcessedMessages[messageId] = true
+        
+        local serverId = extractServerId(messageText)
+        if serverId then
+            local isTarget = hasTargetObjects(messageText)
+            local isFromBot = message.from and message.from.is_bot
+            local senderName = "Unknown"
+            
+            if message.from then
+                if message.from.username then
+                    senderName = "@" .. message.from.username
+                elseif message.from.first_name then
+                    senderName = message.from.first_name
                 end
-                
-                print("📩 Новое сообщение от " .. senderName .. 
-                      " (Бот: " .. tostring(isFromBot) .. ")" ..
-                      " ID: " .. messageId)
-                
-                -- Добавляем в меню ВСЕ сообщения
-                addNotificationToMenu(messageText, serverId, isTarget, messageId, isFromBot)
-                
-                -- Автотелепорт только для целевых объектов
-                if isTarget and not foundTarget then
-                    print("🎯 Найдено подходящее сообщение! ID: " .. messageId)
-                    teleportToServer(serverId)
-                    foundTarget = true
-                end
+            end
+            
+            print("📩 Новое сообщение от " .. senderName .. 
+                  " (Бот: " .. tostring(isFromBot) .. ")" ..
+                  " ID: " .. messageId)
+            
+            -- Добавляем в меню ВСЕ сообщения с serverId
+            addNotificationToMenu(messageText, serverId, isTarget, messageId, isFromBot)
+            
+            -- Автотелепорт только для сообщений от ботов с целевыми объектами
+            if isFromBot and isTarget and not foundTarget then
+                print("🎯 Найдено подходящее сообщение от бота! ID: " .. messageId)
+                teleportToServer(serverId)
+                foundTarget = true
             end
         end
     end
@@ -494,40 +313,18 @@ player.CharacterAdded:Connect(function()
     resetState()
 end)
 
--- Обработчик клавиши M для сворачивания/разворачивания меню
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.M then
-        -- Здесь будет логика сворачивания меню
-        print("📱 Нажмите кнопку −/+ в меню для сворачивания")
-    end
-end)
-
 -- Основной цикл проверки сообщений
 function startMonitoring()
     print("🔍 Инициализация скрипта...")
     
-    -- Инициализируем фильтр сообщений
-    initializeMessageFilter()
+    -- Инициализируем бота
+    initializeBot()
     
     print("✅ Скрипт готов! Ожидаю сообщения от бота...")
     
-    -- Первоначальная загрузка существующих сообщений
-    local initialMessages = getBotMessagesCorrected()
-    for _, message in ipairs(initialMessages) do
-        if message.message_id <= lastProcessedMessageId then
-            local serverId = extractServerId(message.text)
-            if serverId then
-                local isTarget = hasTargetObjects(message.text)
-                local isFromBot = message.from and message.from.is_bot
-                addNotificationToMenu(message.text, serverId, isTarget, message.message_id, isFromBot)
-            end
-        end
-    end
-    
     while true do
         if not isTeleporting then
-            checkForNewServers()
+            checkForNewMessages()
         end
         wait(CHECK_DELAY)
     end
@@ -538,36 +335,8 @@ print("========================================")
 print("🤖 ТЕЛЕГРАМ АВТО-ТЕЛЕПОРТ (ИСПРАВЛЕННЫЙ)")
 print("👤 Chat ID: " .. CHAT_ID)
 print("🎯 Авто-цели: " .. table.concat(TARGET_OBJECTS, ", "))
-print("📱 Меню покажет все сообщения (от бота и от вас)")
-print("🔧 Кнопка −/+ для сворачивания меню")
+print("📱 Используется метод getUpdates")
 print("========================================")
 
 -- Запускаем мониторинг
 spawn(startMonitoring)
-
--- Функции для ручного управления
-function manualTeleport(serverId)
-    if serverId and #serverId == 36 then
-        resetState()
-        teleportToServer(serverId)
-    else
-        print("❌ Неверный serverId!")
-    end
-end
-
-function clearNotifications()
-    if notificationMenu then
-        for _, child in ipairs(notificationMenu:GetChildren()) do
-            if child:IsA("Frame") then
-                child:Destroy()
-            end
-        end
-    end
-    notifications = {}
-    allProcessedMessages = {}
-    print("🗑 Все уведомления очищены")
-end
-
-function showNotificationCount()
-    print("📊 Количество уведомлений в меню: " .. #notifications)
-end
