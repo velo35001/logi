@@ -41,7 +41,7 @@ function httpGet(url)
     return success, result
 end
 
--- ПРАВИЛЬНАЯ функция получения сообщений через getUpdates
+-- Улучшенная функция получения сообщений через getUpdates
 function getMessages()
     local url = API_URL .. "/getUpdates?timeout=10&offset=" .. (lastUpdateId + 1)
     local success, response = httpGet(url)
@@ -57,9 +57,12 @@ function getMessages()
                     lastUpdateId = update.update_id
                 end
                 
-                -- Обрабатываем только сообщения из нужного чата
+                -- Обрабатываем сообщения из нужного чата
                 if update.message and update.message.chat and tostring(update.message.chat.id) == CHAT_ID then
                     table.insert(messages, update.message)
+                -- Также обрабатываем edited_message
+                elseif update.edited_message and update.edited_message.chat and tostring(update.edited_message.chat.id) == CHAT_ID then
+                    table.insert(messages, update.edited_message)
                 end
             end
             
@@ -70,29 +73,19 @@ function getMessages()
             end
         end
     else
-        print("❌ Ошибка HTTP запроса")
+        print("❌ Ошибка HTTP запроса getUpdates")
     end
     return {}
 end
 
--- Альтернативный метод через getChat (для получения информации о чате)
-function getChatInfo()
-    local url = API_URL .. "/getChat?chat_id=" .. CHAT_ID
+-- Функция для отправки сообщений в Telegram (для отладки)
+function sendTelegramMessage(text)
+    local url = API_URL .. "/sendMessage?chat_id=" .. CHAT_ID .. "&text=" .. HttpService:UrlEncode(text)
     local success, response = httpGet(url)
-    
-    if success and response then
-        local data = HttpService:JSONDecode(response)
-        if data.ok then
-            print("✅ Информация о чате:")
-            print("   Название:", data.result.title or "Нет названия")
-            print("   Тип:", data.result.type or "Неизвестно")
-            return true
-        end
-    end
-    return false
+    return success, response
 end
 
--- Функция инициализации
+-- Функция инициализации бота
 function initializeBot()
     print("🔍 Инициализация бота...")
     
@@ -104,15 +97,9 @@ function initializeBot()
         local data = HttpService:JSONDecode(response)
         if data.ok then
             print("✅ Бот: @" .. data.result.username)
+            -- Отправляем тестовое сообщение для проверки
+            sendTelegramMessage("🤖 Скрипт активирован! Ожидаю сообщения с серверами...")
         end
-    end
-    
-    -- Проверяем информацию о чате
-    if not getChatInfo() then
-        print("❌ Не удалось получить информацию о чате. Убедитесь, что:")
-        print("   - Бот добавлен в группу")
-        print("   - Бот имеет права на чтение сообщений")
-        print("   - CHAT_ID указан правильно")
     end
     
     -- Получаем последние сообщения для инициализации
@@ -129,63 +116,90 @@ function initializeBot()
             senderInfo = message.from.is_bot and "Bot" or "User"
             if message.from.username then
                 senderInfo = senderInfo .. " @" .. message.from.username
+            elseif message.from.first_name then
+                senderInfo = senderInfo .. " " .. message.from.first_name
             end
         end
         print("📄 Сообщение ID: " .. message.message_id .. " от " .. senderInfo)
+        
+        -- Логируем содержимое сообщения для отладки
+        if message.text then
+            print("   Текст: " .. string.sub(message.text, 1, 100) .. "...")
+        end
+        if message.caption then
+            print("   Подпись: " .. string.sub(message.caption, 1, 100) .. "...")
+        end
     end
     
     initialized = true
     print("✅ Бот инициализирован. Последний update_id: " .. lastUpdateId)
 end
 
+-- Улучшенная функция проверки целевых объектов
 function hasTargetObjects(messageText)
     if not messageText then return false end
     
+    local textLower = string.lower(messageText)
+    
     for _, target in ipairs(TARGET_OBJECTS) do
-        if string.find(string.lower(messageText), string.lower(target)) then
+        local targetLower = string.lower(target)
+        if string.find(textLower, targetLower, 1, true) then
+            print("🎯 Найден целевой объект: " .. target)
             return true
         end
     end
     return false
 end
 
+-- Улучшенная функция извлечения serverId
 function extractServerId(messageText)
     if not messageText then return nil end
     
-    local patterns = {
-        "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x",
-        "%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x"
-    }
+    -- Паттерн для UUID (стандартный формат Roblox)
+    local pattern = "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x"
+    local found = string.match(messageText, pattern)
     
-    for _, pattern in ipairs(patterns) do
-        local found = messageText:match(pattern)
-        if found and (#found == 36 or #found == 32) then
-            return found
-        end
+    if found and #found == 36 then
+        print("🔗 Найден Server ID: " .. found)
+        return found
     end
+    
+    -- Альтернативный паттерн (без дефисов)
+    local pattern2 = "%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x"
+    local found2 = string.match(messageText, pattern2)
+    
+    if found2 and #found2 == 32 then
+        -- Форматируем в стандартный UUID
+        local formatted = string.sub(found2, 1, 8) .. "-" .. string.sub(found2, 9, 12) .. "-" .. 
+                         string.sub(found2, 13, 16) .. "-" .. string.sub(found2, 17, 20) .. "-" .. 
+                         string.sub(found2, 21, 32)
+        print("🔗 Найден Server ID (форматированный): " .. formatted)
+        return formatted
+    end
+    
     return nil
 end
 
 function extractObjectsPart(messageText)
     if not messageText then return "Нет информации об объектах" end
     
-    local objectsStart = messageText:find("🚨 ВАЖНЫЕ ОБЪЕКТЫ:")
+    local objectsStart = string.find(messageText, "🚨 ВАЖНЫЕ ОБЪЕКТЫ:")
     if not objectsStart then
-        objectsStart = messageText:find("ВАЖНЫЕ ОБЪЕКТЫ:")
+        objectsStart = string.find(messageText, "ВАЖНЫЕ ОБЪЕКТЫ:")
         if not objectsStart then
-            return messageText:gsub("\n", " "):sub(1, 80) .. "..."
+            return string.sub(messageText:gsub("\n", " "), 1, 80) .. "..."
         end
     end
     
-    local objectsEnd = messageText:find("🚀 Телепорт:", objectsStart)
+    local objectsEnd = string.find(messageText, "🚀 Телепорт:", objectsStart)
     if not objectsEnd then
-        objectsEnd = messageText:find("Телепорт:", objectsStart)
+        objectsEnd = string.find(messageText, "Телепорт:", objectsStart)
     end
     if not objectsEnd then
         objectsEnd = #messageText
     end
     
-    local objectsText = messageText:sub(objectsStart, objectsEnd - 1)
+    local objectsText = string.sub(messageText, objectsStart, objectsEnd - 1)
     objectsText = objectsText:gsub("^%s*\n*", ""):gsub("\n*%s*$", "")
     
     return objectsText
@@ -193,7 +207,10 @@ end
 
 -- Основная функция телепортации
 function teleportToServer(serverId)
-    if isTeleporting then return end
+    if isTeleporting then 
+        print("⚠️ Телепортация уже выполняется")
+        return 
+    end
     
     retryCount = retryCount + 1
     if retryCount > MAX_RETRIES then
@@ -223,9 +240,9 @@ function handleTeleportError(errorMsg)
     isTeleporting = false
     local errorText = tostring(errorMsg):lower()
     
-    print("❌ Ошибка: " .. errorText)
+    print("❌ Ошибка телепортации: " .. errorText)
     
-    if errorText:find("full") or errorText:find("переполнен") or errorText:find("capacity") then
+    if string.find(errorText, "full") or string.find(errorText, "переполнен") or string.find(errorText, "capacity") then
         print("⚡ Сервер переполнен! Мгновенный повтор...")
         wait(0.1)
         teleportToServer(currentServerId)
@@ -243,7 +260,7 @@ function resetState()
     currentServerId = ""
 end
 
--- Полная функция создания меню уведомлений
+-- Функция создания меню уведомлений
 function createNotificationMenu()
     local success, errorMsg = pcall(function()
         -- Создаем основной GUI
@@ -513,9 +530,11 @@ function addNotificationToMenu(messageText, serverId, isTarget, messageId, isFro
     end
 end
 
--- Исправленная функция проверки новых сообщений
+-- Улучшенная функция проверки новых сообщений с автоматическим заходом
 function checkForNewMessages()
-    if isTeleporting or not initialized then return false end
+    if isTeleporting or not initialized then 
+        return false 
+    end
     
     local messages = getMessages()
     local foundTarget = false
@@ -537,31 +556,39 @@ function checkForNewMessages()
         allProcessedMessages[messageId] = true
         
         local serverId = extractServerId(messageText)
+        local isFromBot = message.from and message.from.is_bot
+        local senderName = "Unknown"
+        
+        if message.from then
+            if message.from.username then
+                senderName = "@" .. message.from.username
+            elseif message.from.first_name then
+                senderName = message.from.first_name
+            end
+        end
+        
+        print("📩 Новое сообщение от " .. senderName .. 
+              " (Бот: " .. tostring(isFromBot) .. ")" ..
+              " ID: " .. messageId)
+        
+        -- Если нашли serverId, добавляем в меню
         if serverId then
             local isTarget = hasTargetObjects(messageText)
-            local isFromBot = message.from and message.from.is_bot
-            local senderName = "Unknown"
-            
-            if message.from then
-                if message.from.username then
-                    senderName = "@" .. message.from.username
-                elseif message.from.first_name then
-                    senderName = message.from.first_name
-                end
-            end
-            
-            print("📩 Новое сообщение от " .. senderName .. 
-                  " (Бот: " .. tostring(isFromBot) .. ")" ..
-                  " ID: " .. messageId)
             
             -- Добавляем в меню ВСЕ сообщения с serverId
             addNotificationToMenu(messageText, serverId, isTarget, messageId, isFromBot)
             
-            -- Автотелепорт только для сообщений от ботов с целевыми объектами
-            if isFromBot and isTarget and not foundTarget then
-                print("🎯 Найдено подходящее сообщение от бота! ID: " .. messageId)
+            -- АВТОМАТИЧЕСКИЙ ЗАХОД: телепортируемся если есть целевые объекты
+            if isTarget and not foundTarget then
+                print("🎯 АВТОМАТИЧЕСКИЙ ЗАХОД! Найден целевой объект!")
+                print("🚀 Авто-телепорт на сервер: " .. serverId)
                 teleportToServer(serverId)
                 foundTarget = true
+                
+                -- Отправляем подтверждение в Telegram
+                sendTelegramMessage("✅ Авто-заход на сервер с " .. 
+                    table.concat(TARGET_OBJECTS, "/") .. 
+                    " | Server: " .. serverId)
             end
         end
     end
@@ -593,6 +620,7 @@ function startMonitoring()
     initializeBot()
     
     print("✅ Скрипт готов! Ожидаю сообщения от бота...")
+    print("🎯 Авто-заход активирован для: " .. table.concat(TARGET_OBJECTS, ", "))
     
     -- Загружаем существующие сообщения при старте
     local initialMessages = getMessages()
@@ -608,9 +636,13 @@ function startMonitoring()
         end
     end
     
+    -- Основной цикл мониторинга
     while true do
         if not isTeleporting then
-            checkForNewMessages()
+            local found = checkForNewMessages()
+            if found then
+                print("⏳ Ожидаю завершения телепортации...")
+            end
         end
         wait(CHECK_DELAY)
     end
@@ -618,10 +650,11 @@ end
 
 -- Запуск мониторинга
 print("========================================")
-print("🤖 ТЕЛЕГРАМ АВТО-ТЕЛЕПОРТ (ИСПРАВЛЕННЫЙ)")
+print("🤖 ТЕЛЕГРАМ АВТО-ТЕЛЕПОРТ PRO")
 print("👤 Chat ID: " .. CHAT_ID)
 print("🎯 Авто-цели: " .. table.concat(TARGET_OBJECTS, ", "))
-print("📱 Используется метод getUpdates")
+print("🚀 АВТОМАТИЧЕСКИЙ ЗАХОД АКТИВИРОВАН")
+print("📱 Меню уведомлений включено")
 print("========================================")
 
 -- Запускаем мониторинг
@@ -629,11 +662,11 @@ spawn(startMonitoring)
 
 -- Функции для ручного управления
 function manualTeleport(serverId)
-    if serverId and #serverId == 36 then
+    if serverId and (#serverId == 36 or #serverId == 32) then
         resetState()
         teleportToServer(serverId)
     else
-        print("❌ Неверный serverId!")
+        print("❌ Неверный serverId! Должен быть 32 или 36 символов")
     end
 end
 
@@ -652,6 +685,7 @@ end
 
 function showNotificationCount()
     print("📊 Количество уведомлений в меню: " .. #notifications)
+    print("📋 Всего обработано сообщений: " .. #allProcessedMessages)
 end
 
 -- Обработчик клавиши M для информации
@@ -662,5 +696,11 @@ UserInputService.InputBegan:Connect(function(input, gp)
         print("   - Используйте кнопку −/+ для сворачивания")
         print("   - Перетаскивайте за заголовок")
         print("   - Уведомлений: " .. #notifications)
+        print("   - Обработано сообщений: " .. #allProcessedMessages)
+        print("   - Текущий update_id: " .. lastUpdateId)
     end
 end)
+
+-- Автоматическая отправка статуса при запуске
+wait(5)
+sendTelegramMessage("🟢 Скрипт активирован и готов к работе! | " .. os.date("%H:%M:%S"))
