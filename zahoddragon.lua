@@ -8,10 +8,11 @@ local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 
--- Конфигурация Telegram API
-local BOT_TOKEN = "7994146351:AAE_w1jgiZRvGHNG1jlTLyn7v8bvYyZe4Z8"
-local CHAT_ID = "-1003189784409"
-local API_URL = "https://api.telegram.org/bot" .. BOT_TOKEN
+-- КОНФИГУРАЦИЯ DISCORD - ЗАПОЛНИТЕ ЭТИ ДАННЫЕ!
+local DISCORD_BOT_TOKEN = "MTQyMTQ5OTQ5OTYwNzc1MjkxNg.GLYjcY.o9-B72Jut-yhHWC7m-dz-zKXd7ldAuZkba1O0Q" -- ⚠️ НЕ ПУБЛИКУЙТЕ ЭТОТ ТОКЕН!
+local DISCORD_CHANNEL_ID = "1421494081103597743"
+local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz"
+local DISCORD_API_URL = "https://discord.com/api/v10"
 
 -- Конфигурация скрипта
 local TARGET_OBJECTS = {"Dragon Cannelloni", "Strawberry Elephant"}
@@ -23,7 +24,7 @@ local CHECK_DELAY = 2
 local isTeleporting = false
 local currentServerId = ""
 local retryCount = 0
-local lastUpdateId = 0
+local lastMessageId = "0"
 local scriptStartTime = os.time()
 local initialized = false
 local allProcessedMessages = {}
@@ -33,168 +34,169 @@ local notificationMenu
 local notifications = {}
 local MAX_NOTIFICATIONS = 15
 
--- Функция для HTTP запросов
-function httpGet(url)
+-- Улучшенная функция HTTP запросов
+function httpRequest(requestData)
     local success, result = pcall(function()
-        return game:HttpGet(url, true)
+        if syn and syn.request then
+            local response = syn.request(requestData)
+            return true, response.Body or response.Body == "" and "{}" or nil
+        elseif request then
+            local response = request(requestData)
+            return true, response.Body or response.Body == "" and "{}" or nil
+        else
+            -- Fallback для обычного HttpService
+            if requestData.Method == "GET" then
+                return game:HttpGet(requestData.Url, true)
+            else
+                return game:HttpPost(requestData.Url, requestData.Body or "", true)
+            end
+        end
     end)
-    return success, result
+    
+    if success then
+        return true, result
+    else
+        return false, result
+    end
 end
 
--- Улучшенная функция получения сообщений через getUpdates
+-- Функция для получения сообщений из Discord
 function getMessages()
-    -- Исправление: гарантируем, что lastUpdateId - число
-    local offset = tonumber(lastUpdateId) or 0
-    local url = API_URL .. "/getUpdates?timeout=10&offset=" .. (offset + 1)
-    print("🔍 Запрос к Telegram API: " .. string.sub(url, 1, 60) .. "...")
+    local url = DISCORD_API_URL .. "/channels/" .. DISCORD_CHANNEL_ID .. "/messages?limit=10"
+    local headers = {
+        ["Authorization"] = "Bot " .. DISCORD_BOT_TOKEN,
+        ["Content-Type"] = "application/json"
+    }
     
-    local success, response = httpGet(url)
+    print("🔍 Запрос к Discord API...")
+    
+    local success, response = httpRequest({
+        Url = url,
+        Method = "GET",
+        Headers = headers
+    })
     
     if success and response then
         local data = HttpService:JSONDecode(response)
-        if data.ok and data.result then
-            print("✅ Получено updates: " .. #data.result)
-            local messages = {}
+        if type(data) == "table" then
+            print("✅ Получено сообщений из Discord: " .. #data)
             
-            for _, update in ipairs(data.result) do
-                -- Обновляем lastUpdateId с преобразованием в число
-                local updateIdNum = tonumber(update.update_id) or 0
-                if updateIdNum > (tonumber(lastUpdateId) or 0) then
-                    lastUpdateId = updateIdNum
-                end
-                
-                -- Детальное логирование структуры update
-                print("📋 Update ID: " .. tostring(update.update_id))
-                
-                -- Обрабатываем сообщения из нужного чата
-                local message = update.message or update.channel_post or update.edited_message or update.edited_channel_post
-                
-                if message and message.chat then
-                    local chatId = tostring(message.chat.id)
-                    print("   Chat ID: " .. chatId .. " (ожидается: " .. CHAT_ID .. ")")
-                    
-                    if chatId == CHAT_ID then
-                        -- Детальное логирование сообщения
-                        local senderInfo = "Unknown"
-                        if message.from then
-                            senderInfo = (message.from.is_bot and "Bot" or "User") .. " "
-                            if message.from.username then
-                                senderInfo = senderInfo .. "@" .. message.from.username
-                            elseif message.from.first_name then
-                                senderInfo = senderInfo .. message.from.first_name
-                            end
-                        end
-                        print("   📩 Сообщение от: " .. senderInfo)
-                        print("   ID: " .. message.message_id)
-                        
-                        if message.text then
-                            print("   Текст: " .. string.sub(message.text, 1, 200))
-                        end
-                        if message.caption then
-                            print("   Подпись: " .. string.sub(message.caption, 1, 200))
-                        end
-                        
-                        table.insert(messages, message)
-                    else
-                        print("   ❌ Chat ID не совпадает")
-                    end
-                else
-                    print("   ❌ Нет сообщения или чата в update")
-                end
-            end
+            -- Сортируем сообщения от новых к старым
+            table.sort(data, function(a, b)
+                return (tonumber(a.id) or 0) > (tonumber(b.id) or 0)
+            end)
             
-            return messages
+            return data
         else
-            if data.description then
-                print("❌ Ошибка API: " .. data.description)
-            else
-                print("❌ Неизвестная ошибка API")
-            end
+            print("❌ Неверный формат ответа Discord")
         end
     else
-        print("❌ Ошибка HTTP запроса")
+        print("❌ Ошибка HTTP запроса к Discord: " .. tostring(response))
     end
     return {}
 end
 
--- Функция для отправки сообщений в Telegram (для отладки)
-function sendTelegramMessage(text)
-    local url = API_URL .. "/sendMessage?chat_id=" .. CHAT_ID .. "&text=" .. HttpService:UrlEncode(text)
-    local success, response = httpGet(url)
+-- Функция для отправки сообщений через вебхук
+function sendDiscordMessage(text)
+    local data = {
+        content = text,
+        username = "Roblox Auto-Teleport Bot",
+        avatar_url = "https://i.imgur.com/3Jm7y2y.png"
+    }
+    
+    local success, response = httpRequest({
+        Url = DISCORD_WEBHOOK_URL,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = HttpService:JSONEncode(data)
+    })
+    
     if success then
-        print("✅ Тестовое сообщение отправлено")
+        print("✅ Сообщение отправлено в Discord")
+        return true
     else
-        print("❌ Ошибка отправки тестового сообщения")
+        print("❌ Ошибка отправки сообщения в Discord: " .. tostring(response))
+        return false
     end
-    return success, response
 end
 
--- Функция проверки доступа бота к чату
+-- Функция проверки доступа бота к Discord
 function checkBotAccess()
-    print("🔍 Проверка доступа бота к чату...")
+    print("🔍 Проверка доступа бота к Discord...")
     
-    -- Проверяем информацию о боте
-    local url = API_URL .. "/getMe"
-    local success, response = httpGet(url)
+    local url = DISCORD_API_URL .. "/users/@me"
+    local headers = {
+        ["Authorization"] = "Bot " .. DISCORD_BOT_TOKEN
+    }
+    
+    local success, response = httpRequest({
+        Url = url,
+        Method = "GET",
+        Headers = headers
+    })
     
     if success and response then
         local data = HttpService:JSONDecode(response)
-        if data.ok then
-            print("✅ Бот: @" .. data.result.username)
+        if data.id then
+            print("✅ Бот: " .. data.username .. "#" .. (data.discriminator or "0"))
             
-            -- Проверяем информацию о чате
-            local chatUrl = API_URL .. "/getChat?chat_id=" .. CHAT_ID
-            local chatSuccess, chatResponse = httpGet(chatUrl)
+            -- Проверяем доступ к каналу
+            local channelUrl = DISCORD_API_URL .. "/channels/" .. DISCORD_CHANNEL_ID
+            local channelSuccess, channelResponse = httpRequest({
+                Url = channelUrl,
+                Method = "GET",
+                Headers = headers
+            })
             
-            if chatSuccess and chatResponse then
-                local chatData = HttpService:JSONDecode(chatResponse)
-                if chatData.ok then
-                    print("✅ Чат: " .. (chatData.result.title or "Без названия"))
-                    print("   Тип: " .. (chatData.result.type or "Неизвестно"))
+            if channelSuccess and channelResponse then
+                local channelData = HttpService:JSONDecode(channelResponse)
+                if channelData.name then
+                    print("✅ Канал: " .. channelData.name)
+                    print("✅ Тип: " .. (channelData.type == 0 and "Текстовый" or "Голосовой"))
                     return true
-                else
-                    print("❌ Нет доступа к чату. Убедитесь, что:")
-                    print("   - Бот добавлен в группу")
-                    print("   - Бот имеет права на чтение сообщений")
-                    print("   - CHAT_ID указан правильно")
                 end
             else
-                print("❌ Ошибка доступа к чату")
+                print("❌ Нет доступа к каналу. Убедитесь, что:")
+                print("   - Бот добавлен на сервер")
+                print("   - Бот имеет права на чтение сообщений")
+                print("   - ID канала указан правильно")
             end
         end
     else
-        print("❌ Ошибка получения информации о боте")
+        print("❌ Ошибка доступа к Discord API")
+        print("   - Проверьте токен бота")
+        print("   - Проверьте интернет соединение")
     end
     return false
 end
 
 -- Функция инициализации бота
 function initializeBot()
-    print("🔍 Инициализация бота...")
+    print("🔍 Инициализация Discord бота...")
     
     if not checkBotAccess() then
         print("❌ Проблемы с доступом бота. Скрипт может не работать корректно.")
+        return false
     end
     
     -- Получаем последние сообщения для инициализации
     local messages = getMessages()
-    local maxMessageId = 0
-    
-    for _, message in ipairs(messages) do
-        local messageId = tonumber(message.message_id) or 0
-        if messageId > maxMessageId then
-            maxMessageId = messageId
-        end
+    if #messages > 0 then
+        lastMessageId = tostring(messages[1].id) or "0"
+        print("✅ Последний ID сообщения: " .. lastMessageId)
     end
     
     initialized = true
-    print("✅ Бот инициализирован. Последний update_id: " .. tostring(lastUpdateId))
+    print("✅ Discord бот инициализирован!")
     
     -- Отправляем тестовое сообщение
-    sendTelegramMessage("🤖 Скрипт активирован! Ожидаю сообщения с серверами...")
+    sendDiscordMessage("🤖 Скрипт активирован! Ожидаю сообщения с серверами...")
+    return true
 end
 
--- Улучшенная функция проверки целевых объектов
+-- Функция проверки целевых объектов
 function hasTargetObjects(messageText)
     if not messageText then return false end
     
@@ -210,7 +212,7 @@ function hasTargetObjects(messageText)
     return false
 end
 
--- Улучшенная функция извлечения serverId
+-- Функция извлечения serverId
 function extractServerId(messageText)
     if not messageText then return nil end
     
@@ -340,7 +342,7 @@ function createNotificationMenu()
     local success, errorMsg = pcall(function()
         -- Создаем основной GUI
         local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "TelegramNotifications"
+        screenGui.Name = "DiscordNotifications"
         screenGui.Parent = game:GetService("CoreGui")
         screenGui.ResetOnSpawn = false
         screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -370,7 +372,7 @@ function createNotificationMenu()
         -- Заголовок
         local header = Instance.new("TextLabel")
         header.Name = "Header"
-        header.Text = "📱 Уведомления от бота"
+        header.Text = "📱 Уведомления Discord"
         header.Font = Enum.Font.GothamBold
         header.TextSize = 16
         header.TextColor3 = Color3.fromRGB(235, 225, 255)
@@ -581,8 +583,8 @@ function checkForNewMessages()
     local foundTarget = false
     
     for _, message in ipairs(messages) do
-        local messageId = message.message_id
-        local messageText = message.text or message.caption
+        local messageId = tostring(message.id)
+        local messageText = message.content
         
         -- Пропускаем сообщения без текста
         if not messageText then
@@ -598,15 +600,11 @@ function checkForNewMessages()
         allProcessedMessages[messageId] = true
         
         local serverId = extractServerId(messageText)
-        local isFromBot = message.from and message.from.is_bot
+        local isFromBot = message.author and message.author.bot
         local senderName = "Unknown"
         
-        if message.from then
-            if message.from.username then
-                senderName = "@" .. message.from.username
-            elseif message.from.first_name then
-                senderName = message.from.first_name
-            end
+        if message.author then
+            senderName = message.author.username or "Unknown"
         end
         
         print("📩 Новое сообщение от " .. senderName .. 
@@ -627,8 +625,8 @@ function checkForNewMessages()
                 teleportToServer(serverId)
                 foundTarget = true
                 
-                -- Отправляем подтверждение в Telegram
-                sendTelegramMessage("✅ Авто-заход на сервер с " .. 
+                -- Отправляем подтверждение в Discord
+                sendDiscordMessage("✅ Авто-заход на сервер с " .. 
                     table.concat(TARGET_OBJECTS, "/") .. 
                     " | Server: " .. serverId)
             end
@@ -648,7 +646,7 @@ end)
 
 -- Основной цикл проверки сообщений
 function startMonitoring()
-    print("🔍 Инициализация скрипта...")
+    print("🔍 Инициализация скрипта Discord...")
     
     -- Создаем меню уведомлений
     print("🔄 Создание меню уведомлений...")
@@ -661,9 +659,13 @@ function startMonitoring()
     end
     
     -- Инициализируем бота
-    initializeBot()
+    if not initializeBot() then
+        print("❌ Не удалось инициализировать Discord бота")
+        print("⚠️ Проверьте токен бота и ID канала")
+        return
+    end
     
-    print("✅ Скрипт готов! Ожидаю сообщения от бота...")
+    print("✅ Скрипт готов! Ожидаю сообщения из Discord...")
     print("🎯 Авто-заход активирован для: " .. table.concat(TARGET_OBJECTS, ", "))
     
     -- Основной цикл мониторинга
@@ -680,8 +682,8 @@ end
 
 -- Запуск мониторинга
 print("========================================")
-print("🤖 ТЕЛЕГРАМ АВТО-ТЕЛЕПОРТ PRO")
-print("👤 Chat ID: " .. CHAT_ID)
+print("🤖 DISCORD АВТО-ТЕЛЕПОРТ PRO")
+print("👤 Channel ID: " .. DISCORD_CHANNEL_ID)
 print("🎯 Авто-цели: " .. table.concat(TARGET_OBJECTS, ", "))
 print("🚀 АВТОМАТИЧЕСКИЙ ЗАХОД АКТИВИРОВАН")
 print("📱 Меню уведомлений включено")
@@ -726,10 +728,10 @@ UserInputService.InputBegan:Connect(function(input, gp)
         print("   - Используйте кнопку −/+ для сворачивания")
         print("   - Уведомлений: " .. #notifications)
         print("   - Обработано сообщений: " .. #allProcessedMessages)
-        print("   - Текущий update_id: " .. tostring(lastUpdateId))
+        print("   - Текущий статус: " .. (isTeleporting and "Телепортация" : "Ожидание"))
     end
 end)
 
 -- Автоматическая отправка статуса при запуске
 wait(5)
-sendTelegramMessage("🟢 Скрипт активирован и готов к работе! | " .. os.date("%H:%M:%S"))
+sendDiscordMessage("🟢 Скрипт активирован и готов к работе! | " .. os.date("%H:%M:%S"))
