@@ -1,4 +1,3 @@
--- Исправленная версия скрипта для отображения сообщений от бота
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -10,7 +9,7 @@ local CoreGui = game:GetService("CoreGui")
 local player = Players.LocalPlayer
 
 -- Конфигурация Telegram API
-local BOT_TOKEN = "8158106101:AAGTaP3CEjnWh1rjNjj7UlqfJisani8Gwz8"
+local BOT_TOKEN = "7994146351:AAE_w1jgiZRvGHNG1jlTLyn7v8bvYyZe4Z8"
 local CHAT_ID = "-1003189784409"
 local API_URL = "https://api.telegram.org/bot" .. BOT_TOKEN
 
@@ -27,7 +26,7 @@ local retryCount = 0
 local lastProcessedMessageId = 0
 local scriptStartTime = os.time()
 local initialized = false
-local allProcessedMessages = {} -- Храним все обработанные сообщения
+local allProcessedMessages = {}
 
 -- Функция для HTTP запросов
 function httpGet(url)
@@ -37,29 +36,49 @@ function httpGet(url)
     return success, result
 end
 
--- Функция получения ВСЕХ сообщений из чата (включая от бота)
-function getAllChatMessages()
+-- ИСПРАВЛЕННАЯ функция получения сообщений через getChatHistory
+function getBotMessagesCorrected()
+    -- Используем getChatHistory вместо getUpdates
     local url = API_URL .. "/getChatHistory?chat_id=" .. CHAT_ID .. "&limit=10"
     local success, response = httpGet(url)
     
     if success and response then
         local data = HttpService:JSONDecode(response)
         if data.ok and data.result then
-            return data.result.messages or {}
+            local messages = data.result.messages or {}
+            local filteredMessages = {}
+            
+            for _, message in ipairs(messages) do
+                -- Преобразуем структуру сообщения к формату похожему на getUpdates
+                local formattedMessage = {
+                    message_id = message.id,
+                    text = message.text or message.caption, -- caption для сообщений с медиа
+                    chat = {id = CHAT_ID},
+                    from = message.from,
+                    date = message.date
+                }
+                
+                table.insert(filteredMessages, formattedMessage)
+            end
+            
+            return filteredMessages
+        else
+            print("❌ Ошибка в ответе getChatHistory:", data.description)
         end
+    else
+        print("❌ Ошибка HTTP запроса getChatHistory")
     end
     return {}
 end
 
--- Альтернативная функция через getUpdates (исправленная)
-function getBotMessagesCorrected()
-    local url = API_URL .. "/getUpdates?offset=" .. (lastProcessedMessageId + 1) .. "&timeout=5"
+-- Альтернативный метод через getUpdates (если getChatHistory не работает)
+function getMessagesViaUpdates()
+    local url = API_URL .. "/getUpdates?offset=" .. (lastProcessedMessageId + 1)
     local success, response = httpGet(url)
     
     if success and response then
         local data = HttpService:JSONDecode(response)
         if data.ok and data.result then
-            -- Фильтруем сообщения из нужного чата
             local filteredMessages = {}
             for _, update in ipairs(data.result) do
                 if update.message and update.message.chat and tostring(update.message.chat.id) == CHAT_ID then
@@ -72,32 +91,34 @@ function getBotMessagesCorrected()
     return {}
 end
 
--- Функция получения сообщений через getChat (более надежная)
-function getChatMessages()
-    local url = API_URL .. "/getChat?chat_id=" .. CHAT_ID
-    local success, response = httpGet(url)
-    
-    if success and response then
-        -- Если чат доступен, получаем историю
-        return getBotMessagesCorrected()
-    else
-        print("❌ Не удалось получить доступ к чату. Используем альтернативный метод.")
-        return getBotMessagesCorrected()
-    end
-end
-
--- Функция инициализации
+-- Улучшенная функция инициализации
 function initializeMessageFilter()
     print("🔍 Инициализация фильтра сообщений...")
     
-    -- Получаем последние сообщения для инициализации
+    -- Сначала пробуем getChatHistory
     local messages = getBotMessagesCorrected()
+    
+    if #messages == 0 then
+        print("⚠️ getChatHistory не сработал, пробуем getUpdates...")
+        messages = getMessagesViaUpdates()
+    end
+    
     local maxMessageId = 0
     
     for _, message in ipairs(messages) do
         if message.message_id > maxMessageId then
             maxMessageId = message.message_id
         end
+        
+        -- Логируем информацию о сообщениях для отладки
+        local senderInfo = "Unknown"
+        if message.from then
+            senderInfo = message.from.is_bot and "Bot" or "User"
+            if message.from.username then
+                senderInfo = senderInfo .. " @" .. message.from.username
+            end
+       end
+        print("📄 Сообщение ID: " .. message.message_id .. " от " .. senderInfo)
     end
     
     if maxMessageId > 0 then
@@ -110,7 +131,6 @@ function initializeMessageFilter()
     initialized = true
 end
 
--- Функция проверки наличия целевых объектов
 function hasTargetObjects(messageText)
     if not messageText then return false end
     
@@ -122,7 +142,6 @@ function hasTargetObjects(messageText)
     return false
 end
 
--- Функция извлечения serverId из сообщения
 function extractServerId(messageText)
     if not messageText then return nil end
     
@@ -135,7 +154,6 @@ function extractServerId(messageText)
     return nil
 end
 
--- Функция для извлечения части с объектами
 function extractObjectsPart(messageText)
     if not messageText then return "Нет информации об объектах" end
     
@@ -346,7 +364,6 @@ function addNotificationToMenu(messageText, serverId, isTarget, messageId, isFro
     senderIndicator.Position = UDim2.new(1, -55, 0, 2)
     senderIndicator.TextXAlignment = Enum.TextXAlignment.Right
     senderIndicator.Parent = notificationFrame
-    
     -- Текст уведомления
     local textLabel = Instance.new("TextLabel")
     textLabel.Text = objectsText
@@ -412,11 +429,16 @@ function addNotificationToMenu(messageText, serverId, isTarget, messageId, isFro
     return notification
 end
 
--- Функция проверки новых сообщений (исправленная)
+-- ИСПРАВЛЕННАЯ функция проверки новых сообщений
 function checkForNewServers()
     if isTeleporting or not initialized then return end
     
     local newMessages = getBotMessagesCorrected()
+    
+    if #newMessages == 0 then
+        newMessages = getMessagesViaUpdates()
+    end
+    
     local foundTarget = false
     
     for _, message in ipairs(newMessages) do
@@ -435,7 +457,20 @@ function checkForNewServers()
             local serverId = extractServerId(messageText)
             if serverId then
                 local isTarget = hasTargetObjects(messageText)
-                local isFromBot = message.from and message.from.is_bot -- Проверяем, от бота ли сообщение
+                local isFromBot = message.from and message.from.is_bot
+                local senderName = "Unknown"
+                
+                if message.from then
+                    if message.from.username then
+                        senderName = "@" .. message.from.username
+                    elseif message.from.first_name then
+                        senderName = message.from.first_name
+                    end
+                end
+                
+                print("📩 Новое сообщение от " .. senderName .. 
+                      " (Бот: " .. tostring(isFromBot) .. ")" ..
+                      " ID: " .. messageId)
                 
                 -- Добавляем в меню ВСЕ сообщения
                 addNotificationToMenu(messageText, serverId, isTarget, messageId, isFromBot)
