@@ -9,7 +9,7 @@ local CoreGui = game:GetService("CoreGui")
 local player = Players.LocalPlayer
 
 -- КОНФИГУРАЦИЯ DISCORD - ЗАПОЛНИТЕ ЭТИ ДАННЫЕ!
-local DISCORD_BOT_TOKEN = "MTQyMTQ5OTQ5OTYwNzc1MjkxNg.GLYjcY.o9-B72Jut-yhHWC7m-dz-zKXd7ldAuZkba1O0Q" -- ⚠️ НЕ ПУБЛИКУЙТЕ ЭТОТ ТОКЕН!
+local DISCORD_BOT_TOKEN = "MTQyMTQ5OTQ5OTYwNzc1MjkxNg.Gt-yig.50PNRnyefW-H2lv-h4xvRTj1lWOTaU1o0yWTuA" -- ⚠️ НЕ ПУБЛИКУЙТЕ ЭТОТ ТОКЕН!
 local DISCORD_CHANNEL_ID = "1421494081103597743"
 local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz"
 local DISCORD_API_URL = "https://discord.com/api/v10"
