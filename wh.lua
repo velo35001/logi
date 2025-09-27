@@ -31,8 +31,9 @@ local SCANNER_SETTINGS = {
 
 -- Настройки Discord вебхуков
 local DISCORD_MAIN = {
-    WebhookUrl = "https://discord.com/api/webhooks/1421498530756952287/XKkzMBw09MJGBC9VMv6A5yMkE1IxYLtQWqq_bKXCiK0etZSuTvnOutuWRr9HQA7H6nv1", -- ЗАМЕНИТЕ НА СВОЙ WEBHOOK URL
-    Enabled = true,
+    Token = "8158106101:AAGTaP3CEjnWh1rjNjj7UlqfJisani8Gwz8",
+    ChatId = "-1003189784409",
+    Enabled = true
     ImportantObjects = {
         ["Pot Hotspdddot"] = true,
         ["La Grande Combinasion"] = true,
