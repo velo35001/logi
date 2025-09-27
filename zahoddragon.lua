@@ -43,8 +43,10 @@ end
 
 -- Улучшенная функция получения сообщений через getUpdates
 function getMessages()
-    local url = API_URL .. "/getUpdates?timeout=10&offset=" .. (lastUpdateId + 1)
-    print("🔍 Запрос к Telegram API: " .. url)
+    -- Исправление: гарантируем, что lastUpdateId - число
+    local offset = tonumber(lastUpdateId) or 0
+    local url = API_URL .. "/getUpdates?timeout=10&offset=" .. (offset + 1)
+    print("🔍 Запрос к Telegram API: " .. string.sub(url, 1, 60) .. "...")
     
     local success, response = httpGet(url)
     
@@ -55,20 +57,21 @@ function getMessages()
             local messages = {}
             
             for _, update in ipairs(data.result) do
-                -- Обновляем lastUpdateId
-                if update.update_id > lastUpdateId then
-                    lastUpdateId = update.update_id
+                -- Обновляем lastUpdateId с преобразованием в число
+                local updateIdNum = tonumber(update.update_id) or 0
+                if updateIdNum > (tonumber(lastUpdateId) or 0) then
+                    lastUpdateId = updateIdNum
                 end
                 
                 -- Детальное логирование структуры update
-                print("📋 Update ID: " .. update.update_id)
+                print("📋 Update ID: " .. tostring(update.update_id))
                 
                 -- Обрабатываем сообщения из нужного чата
                 local message = update.message or update.channel_post or update.edited_message or update.edited_channel_post
                 
                 if message and message.chat then
                     local chatId = tostring(message.chat.id)
-                    print("   Chat ID: " .. chatId + " (ожидается: " + CHAT_ID + ")")
+                    print("   Chat ID: " .. chatId .. " (ожидается: " .. CHAT_ID .. ")")
                     
                     if chatId == CHAT_ID then
                         -- Детальное логирование сообщения
@@ -92,6 +95,8 @@ function getMessages()
                         end
                         
                         table.insert(messages, message)
+                    else
+                        print("   ❌ Chat ID не совпадает")
                     end
                 else
                     print("   ❌ Нет сообщения или чата в update")
@@ -107,7 +112,7 @@ function getMessages()
             end
         end
     else
-        print("❌ Ошибка HTTP запроса: " .. tostring(response))
+        print("❌ Ошибка HTTP запроса")
     end
     return {}
 end
@@ -176,13 +181,14 @@ function initializeBot()
     local maxMessageId = 0
     
     for _, message in ipairs(messages) do
-        if message.message_id > maxMessageId then
-            maxMessageId = message.message_id
+        local messageId = tonumber(message.message_id) or 0
+        if messageId > maxMessageId then
+            maxMessageId = messageId
         end
     end
     
     initialized = true
-    print("✅ Бот инициализирован. Последний update_id: " .. lastUpdateId)
+    print("✅ Бот инициализирован. Последний update_id: " .. tostring(lastUpdateId))
     
     -- Отправляем тестовое сообщение
     sendTelegramMessage("🤖 Скрипт активирован! Ожидаю сообщения с серверами...")
@@ -426,40 +432,6 @@ function createNotificationMenu()
                 notificationMenu.Size = UDim2.new(0, 400, 0, 40)
                 toggleButton.Text = "+"
                 scrollFrame.Visible = false
-            end
-        end)
-        
-        -- Добавляем возможность перетаскивания
-        local dragInput, dragStart, startPos
-        local function update(input)
-            local delta = input.Position - dragStart
-            notificationMenu.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0.5, startPos.Y.Offset + delta.Y)
-        end
-        
-        header.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragStart = input.Position
-                startPos = notificationMenu.Position
-                
-                local connection
-                connection = input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragStart = nil
-                        connection:Disconnect()
-                    end
-                end)
-            end
-        end)
-        
-        header.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                dragInput = input
-            end
-        end)
-        
-        game:GetService("UserInputService").InputChanged:Connect(function(input)
-            if input == dragInput and dragStart then
-                update(input)
             end
         end)
         
@@ -752,10 +724,9 @@ UserInputService.InputBegan:Connect(function(input, gp)
     if input.KeyCode == Enum.KeyCode.M then
         print("📱 Информация о меню:")
         print("   - Используйте кнопку −/+ для сворачивания")
-        print("   - Перетаскивайте за заголовок")
         print("   - Уведомлений: " .. #notifications)
         print("   - Обработано сообщений: " .. #allProcessedMessages)
-        print("   - Текущий update_id: " .. lastUpdateId)
+        print("   - Текущий update_id: " .. tostring(lastUpdateId))
     end
 end)
 
