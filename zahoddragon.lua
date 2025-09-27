@@ -44,11 +44,14 @@ end
 -- Улучшенная функция получения сообщений через getUpdates
 function getMessages()
     local url = API_URL .. "/getUpdates?timeout=10&offset=" .. (lastUpdateId + 1)
+    print("🔍 Запрос к Telegram API: " .. url)
+    
     local success, response = httpGet(url)
     
     if success and response then
         local data = HttpService:JSONDecode(response)
         if data.ok and data.result then
+            print("✅ Получено updates: " .. #data.result)
             local messages = {}
             
             for _, update in ipairs(data.result) do
@@ -57,23 +60,54 @@ function getMessages()
                     lastUpdateId = update.update_id
                 end
                 
+                -- Детальное логирование структуры update
+                print("📋 Update ID: " .. update.update_id)
+                
                 -- Обрабатываем сообщения из нужного чата
-                if update.message and update.message.chat and tostring(update.message.chat.id) == CHAT_ID then
-                    table.insert(messages, update.message)
-                -- Также обрабатываем edited_message
-                elseif update.edited_message and update.edited_message.chat and tostring(update.edited_message.chat.id) == CHAT_ID then
-                    table.insert(messages, update.edited_message)
+                local message = update.message or update.channel_post or update.edited_message or update.edited_channel_post
+                
+                if message and message.chat then
+                    local chatId = tostring(message.chat.id)
+                    print("   Chat ID: " .. chatId + " (ожидается: " + CHAT_ID + ")")
+                    
+                    if chatId == CHAT_ID then
+                        -- Детальное логирование сообщения
+                        local senderInfo = "Unknown"
+                        if message.from then
+                            senderInfo = (message.from.is_bot and "Bot" or "User") .. " "
+                            if message.from.username then
+                                senderInfo = senderInfo .. "@" .. message.from.username
+                            elseif message.from.first_name then
+                                senderInfo = senderInfo .. message.from.first_name
+                            end
+                        end
+                        print("   📩 Сообщение от: " .. senderInfo)
+                        print("   ID: " .. message.message_id)
+                        
+                        if message.text then
+                            print("   Текст: " .. string.sub(message.text, 1, 200))
+                        end
+                        if message.caption then
+                            print("   Подпись: " .. string.sub(message.caption, 1, 200))
+                        end
+                        
+                        table.insert(messages, message)
+                    end
+                else
+                    print("   ❌ Нет сообщения или чата в update")
                 end
             end
             
             return messages
         else
             if data.description then
-                print("❌ Ошибка API:", data.description)
+                print("❌ Ошибка API: " .. data.description)
+            else
+                print("❌ Неизвестная ошибка API")
             end
         end
     else
-        print("❌ Ошибка HTTP запроса getUpdates")
+        print("❌ Ошибка HTTP запроса: " .. tostring(response))
     end
     return {}
 end
@@ -82,12 +116,17 @@ end
 function sendTelegramMessage(text)
     local url = API_URL .. "/sendMessage?chat_id=" .. CHAT_ID .. "&text=" .. HttpService:UrlEncode(text)
     local success, response = httpGet(url)
+    if success then
+        print("✅ Тестовое сообщение отправлено")
+    else
+        print("❌ Ошибка отправки тестового сообщения")
+    end
     return success, response
 end
 
--- Функция инициализации бота
-function initializeBot()
-    print("🔍 Инициализация бота...")
+-- Функция проверки доступа бота к чату
+function checkBotAccess()
+    print("🔍 Проверка доступа бота к чату...")
     
     -- Проверяем информацию о боте
     local url = API_URL .. "/getMe"
@@ -97,9 +136,39 @@ function initializeBot()
         local data = HttpService:JSONDecode(response)
         if data.ok then
             print("✅ Бот: @" .. data.result.username)
-            -- Отправляем тестовое сообщение для проверки
-            sendTelegramMessage("🤖 Скрипт активирован! Ожидаю сообщения с серверами...")
+            
+            -- Проверяем информацию о чате
+            local chatUrl = API_URL .. "/getChat?chat_id=" .. CHAT_ID
+            local chatSuccess, chatResponse = httpGet(chatUrl)
+            
+            if chatSuccess and chatResponse then
+                local chatData = HttpService:JSONDecode(chatResponse)
+                if chatData.ok then
+                    print("✅ Чат: " .. (chatData.result.title or "Без названия"))
+                    print("   Тип: " .. (chatData.result.type or "Неизвестно"))
+                    return true
+                else
+                    print("❌ Нет доступа к чату. Убедитесь, что:")
+                    print("   - Бот добавлен в группу")
+                    print("   - Бот имеет права на чтение сообщений")
+                    print("   - CHAT_ID указан правильно")
+                end
+            else
+                print("❌ Ошибка доступа к чату")
+            end
         end
+    else
+        print("❌ Ошибка получения информации о боте")
+    end
+    return false
+end
+
+-- Функция инициализации бота
+function initializeBot()
+    print("🔍 Инициализация бота...")
+    
+    if not checkBotAccess() then
+        print("❌ Проблемы с доступом бота. Скрипт может не работать корректно.")
     end
     
     -- Получаем последние сообщения для инициализации
@@ -110,29 +179,13 @@ function initializeBot()
         if message.message_id > maxMessageId then
             maxMessageId = message.message_id
         end
-        
-        local senderInfo = "Unknown"
-        if message.from then
-            senderInfo = message.from.is_bot and "Bot" or "User"
-            if message.from.username then
-                senderInfo = senderInfo .. " @" .. message.from.username
-            elseif message.from.first_name then
-                senderInfo = senderInfo .. " " .. message.from.first_name
-            end
-        end
-        print("📄 Сообщение ID: " .. message.message_id .. " от " .. senderInfo)
-        
-        -- Логируем содержимое сообщения для отладки
-        if message.text then
-            print("   Текст: " .. string.sub(message.text, 1, 100) .. "...")
-        end
-        if message.caption then
-            print("   Подпись: " .. string.sub(message.caption, 1, 100) .. "...")
-        end
     end
     
     initialized = true
     print("✅ Бот инициализирован. Последний update_id: " .. lastUpdateId)
+    
+    -- Отправляем тестовое сообщение
+    sendTelegramMessage("🤖 Скрипт активирован! Ожидаю сообщения с серверами...")
 end
 
 -- Улучшенная функция проверки целевых объектов
@@ -175,6 +228,22 @@ function extractServerId(messageText)
                          string.sub(found2, 21, 32)
         print("🔗 Найден Server ID (форматированный): " .. formatted)
         return formatted
+    end
+    
+    -- Поиск serverId в различных форматах
+    local patterns = {
+        "Server:?%s*([%x%-]+)",
+        "ID:?%s*([%x%-]+)",
+        "Сервер:?%s*([%x%-]+)",
+        "Instance:?%s*([%x%-]+)"
+    }
+    
+    for _, pat in ipairs(patterns) do
+        local found3 = string.match(messageText, pat)
+        if found3 and (#found3 == 36 or #found3 == 32) then
+            print("🔗 Найден Server ID (по шаблону): " .. found3)
+            return found3
+        end
     end
     
     return nil
@@ -545,6 +614,7 @@ function checkForNewMessages()
         
         -- Пропускаем сообщения без текста
         if not messageText then
+            print("❌ Сообщение без текста, пропускаем")
             continue
         end
         
@@ -590,6 +660,8 @@ function checkForNewMessages()
                     table.concat(TARGET_OBJECTS, "/") .. 
                     " | Server: " .. serverId)
             end
+        else
+            print("❌ Server ID не найден в сообщении")
         end
     end
     
@@ -621,20 +693,6 @@ function startMonitoring()
     
     print("✅ Скрипт готов! Ожидаю сообщения от бота...")
     print("🎯 Авто-заход активирован для: " .. table.concat(TARGET_OBJECTS, ", "))
-    
-    -- Загружаем существующие сообщения при старте
-    local initialMessages = getMessages()
-    for _, message in ipairs(initialMessages) do
-        local messageText = message.text or message.caption
-        if messageText then
-            local serverId = extractServerId(messageText)
-            if serverId then
-                local isTarget = hasTargetObjects(messageText)
-                local isFromBot = message.from and message.from.is_bot
-                addNotificationToMenu(messageText, serverId, isTarget, message.message_id, isFromBot)
-            end
-        end
-    end
     
     -- Основной цикл мониторинга
     while true do
