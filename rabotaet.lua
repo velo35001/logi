@@ -9,7 +9,6 @@ end
 
 -- Паттерны для обнаружения Discord webhook URL
 local DISCORD_PATTERNS = {
-    "discord%.com/api/webhooks/",
     "discordapp%.com/api/webhooks/",
     "webhook%.lewisakura%.moe/api/webhooks/",
     "hooks%.hyra%.io/api/webhooks/",
