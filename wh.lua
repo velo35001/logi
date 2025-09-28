@@ -365,13 +365,19 @@ local function findTraits(obj)
     return traits
 end
 
+
 local function scanObject(obj)
     if not obj or not obj.Parent then return nil end
     
-    -- Проверка прозрачности только для частей Cube.
-    if not checkCubeTransparency(obj) then
-        print(obj.Name .. ": найдены части Cube. с высокой прозрачностью (>0.40), уведомление не отправляется")
-        return nil
+    -- Пропуск проверки прозрачности для "Garama and Madundung" и "La Supreme Combinasion"
+    if obj.Name == "Garama and Madundung" or obj.Name == "La Supreme Combinasion" then
+        print(obj.Name .. ": проверка прозрачности пропущена")
+    else
+        -- Проверка прозрачности только для частей Cube.
+        if not checkCubeTransparency(obj) then
+            print(obj.Name .. ": найдены части Cube с высокой прозрачностью (>0.40), уведомление не отправляется")
+            return nil
+        end
     end
     
     local mutation = findMutation(obj)
