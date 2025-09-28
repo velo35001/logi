@@ -59,7 +59,8 @@ local TG_MAIN = {
         ["Tacorita Bicicleta"] = true,
         ["Tictac Sahur"] = true,
         ["Celularcini Visiosini"] = true,
-        ["Los Primos"] = true
+        ["Los Primos"] = true,
+        ["Tang Tang Keletang"] = true
     }
 }
 
@@ -122,7 +123,8 @@ local OBJECT_INCOME = {
     ["Tacorita Bicicleta"] = "16.5M/s",
     ["Tictac Sahur"] = "37M/s",
     ["Celularcini Visiosini"] = "22.5M/s",
-    ["Los Primos"] = "31M/s"
+    ["Los Primos"] = "31M/s",
+    ["Tang Tang Keletang"] = "33,5M/s"
 }
 
 -- Множители мутаций и трейтов
@@ -201,7 +203,8 @@ local OBJECT_EMOJIS = {
     ["Tacorita Bicicleta"] = "🌮",
     ["Tictac Sahur"] = "🕰️",
     ["Celularcini Visiosini"] = "📞",
-    ["Los Primos"] = "🐵"
+    ["Los Primos"] = "🐵",
+    ["Tang Tang Keletang"] = "🏏"
 }
 
 -- Эмодзи для мутаций
@@ -252,7 +255,8 @@ local OBJECT_NAMES = {
     "Tacorita Bicicleta",
     "Tictac Sahur",
     "Celularcini Visiosini",
-    "Los Primos"
+    "Los Primos",
+    "Tang Tang Keletang"
 }
 
 -- Системные переменные
