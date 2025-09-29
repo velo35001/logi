@@ -163,58 +163,6 @@ local TRAIT_MULTIPLIERS = {
     ["Sombrero"] = 5
 }
 
--- Эмодзи для объектов
-local OBJECT_EMOJIS = {
-    ["La Vacca Saturno Saturnita"] = "🐮",
-    ["Chimpanzini Spiderini"] = "🕷",
-    ["Los Tralaleritos"] = "🐟",
-    ["Las Tralaleritas"] = "🌸",
-    ["Graipuss Medussi"] = "🦑",
-    ["Torrtuginni Dragonfrutini"] = "🐉",
-    ["Pot Hotspot"] = "📱",
-    ["La Grande Combinasion"] = "❗️",
-    ["Garama and Madundung"] = "🍝",
-    ["Secret Lucky Block"] = "⬛️",
-    ["Dragon Cannelloni"] = "🐲",
-    ["Nuclearo Dinossauro"] = "🦕",
-    ["Las Vaquitas Saturnitas"] = "👦",
-    ["Chicleteira Bicicleteira"] = "🚲",
-    ["Los Combinasionas"] = "⚒️",
-    ["Agarrini la Palini"] = "🥄",
-    ["Los Hotspotsitos"] = "☎️",
-    ["Esok Sekolah"] = "🏠",
-    ["Nooo My Hotspot"] = "👽",
-    ["La Supreme Combinasion"] = "🔫",
-    ["Admin Lucky Block"] = "🆘",
-    ["Ketupat Kepat"] = "🍏",
-    ["Strawberry Elephant"] = "🐘",
-    ["Spaghetti Tualetti"] = "🚽",
-    ["Ketchuru and Musturu"] = "🍾",
-    ["Los Nooo My Hotspdffsfsfotsitos"] = "🥔",
-    ["La Kark666erkar Combinasion"] = "🥊",
-    ["Tralaledon"] = "🦈",
-    ["Los Bros"] = "✊",
-    ["La Extinct Grande"] = "🩻", 
-    ["Los Chicleteiras"] = "🚳",
-    ["Las Sis"] = "👧",
-    ["Tacorita Bicicleta"] = "🌮",
-    ["Tictac Sahur"] = "🕰️",
-    ["Celularcini Visiosini"] = "📞",
-    ["Los Primos"] = "🐵",
-    ["Tang Tang Keletang"] = "🏏"
-}
-
--- Эмодзи для мутаций
-local MUTATION_EMOJIS = {
-    ["Gold"] = "🟨",
-    ["Lava"] = "🟧",
-    ["Rainbow"] = "🌈",
-    ["Diamond"] = "💎",
-    ["Candy"] = "🍬",
-    ["Bloodrot"] = "🟥",
-    ["Galaxy"] = "🟪"
-}
-
 -- Список объектов
 local OBJECT_NAMES = {
     "La Vacca Saturno Saturnita",
@@ -310,10 +258,6 @@ local function formatIncomeNumber(num)
     else
         return string.format("%d/s", num)
     end
-end
-
-local function getMutationEmoji(mutation)
-    return MUTATION_EMOJIS[mutation] or "⬜️"
 end
 
 -- Функции для сбора информации об объектах
@@ -438,24 +382,23 @@ local function createColoredText(objData)
     textLabel.TextXAlignment = Enum.TextXAlignment.Left
     textLabel.TextStrokeTransparency = 0.3
     
-    local emoji = OBJECT_EMOJIS[objData.name] or "🔹"
     local incomeText = objData.finalIncome ~= "???/s" and objData.finalIncome or "???"
     
     local richText = string.format(
-        '<font color="rgb(255,255,255)">%s%s %s: %s</font>',
-        emoji, getMutationEmoji(objData.mutation), objData.name, incomeText
+        '%s %s: %s',
+        objData.name, incomeText
     )
     
     -- Показываем мутации и трейты с их множителями
     if objData.mutation and MUTATION_MULTIPLIERS[objData.mutation] then
         richText = richText .. string.format(
-            '\n<font color="rgb(255,255,150)">%s x%.2f</font>',
+            '\n%s x%.2f',
             objData.mutation, objData.mutationMultiplier
         )
     end
     
     if #objData.traits > 0 then
-        richText = richText .. '\n<font color="rgb(150,255,150)">'
+        richText = richText .. '\n'
         for _, trait in ipairs(objData.traits) do
             if TRAIT_MULTIPLIERS[trait] then
                 richText = richText .. string.format('%s x%.2f ', trait, TRAIT_MULTIPLIERS[trait])
@@ -463,11 +406,10 @@ local function createColoredText(objData)
                 richText = richText .. trait .. ' '
             end
         end
-        richText = richText .. '</font>'
     end
     
     textLabel.Text = richText
-    textLabel.RichText = true
+    textLabel.RichText = false
     return textLabel
 end
 
@@ -515,9 +457,12 @@ local function canSendNotification(botType)
     return true
 end
 
--- Функция отправки в Discord Webhook (Main) - ПРОСТОЙ ТЕКСТ
-local function sendDiscordWebhook(message)
+-- Функция отправки в Discord Webhook (Main) - упрощенная версия без эмбедов
+local function sendDiscordWebhook(message, isImportant)
     if not DISCORD_MAIN.Enabled or not request then return end
+    
+    local username = getAccountInfo()
+    local serverId = getServerId()
     
     local success, result = pcall(function()
         return request({
@@ -527,7 +472,7 @@ local function sendDiscordWebhook(message)
                 ["Content-Type"] = "application/json"
             },
             Body = HttpService:JSONEncode({
-                content = message,
+                content = (isImportant and "@everyone " or "") .. message,
                 username = "Brainrot ESP"
             })
         })
@@ -538,9 +483,39 @@ local function sendDiscordWebhook(message)
     end
 end
 
--- Функция отправки в Telegram (Special) - ПРОСТОЙ ТЕКСТ
-local function sendSpecialTelegramAlert(message)
-    if not TG_SPECIAL.Enabled or not request then return end
+-- Функция отправки в Telegram (Special)
+local function sendSpecialTelegramAlert()
+    if not TG_SPECIAL.Enabled or not request or #objectsToNotifySpecial == 0 then return end
+    if not canSendNotification("special") then return end
+    
+    local serverId = getServerId()
+    local username = getAccountInfo()
+    
+    local message = string.format(
+        "Обнаружены объекты в Steal a brainrot\n"..
+        "Игрок: %s\n"..
+        "Сервер: %s\n"..
+        "Время: %s\n\n"..
+        "Объекты с низким доходом:\n",
+        username, serverId, os.date("%X")
+    )
+    
+    for _, objData in ipairs(objectsToNotifySpecial) do
+        message = message .. string.format("%s (%s)", objData.name, objData.finalIncome)
+        
+        if #objData.traits > 0 then
+            message = message .. " " .. table.concat(objData.traits, " ")
+        end
+        
+        message = message .. "\n"
+    end
+    
+    if serverId ~= "Одиночная игра" then
+        message = message .. string.format(
+            "\nТелепорт:\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')",
+            serverId
+        )
+    end
     
     request({
         Url = "https://api.telegram.org/bot"..TG_SPECIAL.Token.."/sendMessage",
@@ -550,8 +525,7 @@ local function sendSpecialTelegramAlert(message)
         },
         Body = HttpService:JSONEncode({
             chat_id = TG_SPECIAL.ChatId,
-            text = message,
-            parse_mode = "Markdown"
+            text = message
         })
     })
 end
@@ -571,28 +545,15 @@ local function sendMainDiscordAlert()
         end
     end
     
-    local username = getAccountInfo()
-    local serverId = getServerId()
-    
-    -- Формируем сообщение в нужном формате
-    local message = string.format(
-        "🔍 Обнаружены объекты в Steal a brainrot\n"..
-        "👤 Игрок: @%s\n"..
-        "🌐 Сервер: %s\n"..
-        "🕘 Время: %s\n\n",
-        username, serverId, os.date("%X")
-    )
+    local message = ""
     
     if #importantObjects > 0 then
-        message = message .. "🚨 ВАЖНЫЕ ОБЪЕКТЫ:\n"
+        message = message .. "ВАЖНЫЕ ОБЪЕКТЫ:\n"
         for _, objData in ipairs(importantObjects) do
-            local emoji = OBJECT_EMOJIS[objData.name] or "⚠️"
-            local mutationEmoji = getMutationEmoji(objData.mutation)
-            
-            message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
+            message = message .. string.format("%s (%s)", objData.name, objData.finalIncome)
             
             if #objData.traits > 0 then
-                message = message .. " " .. table.concat(objData.traits, ",")
+                message = message .. " " .. table.concat(objData.traits, " ")
             end
             
             message = message .. "\n"
@@ -601,68 +562,26 @@ local function sendMainDiscordAlert()
     end
     
     if #regularObjects > 0 then
-        message = message .. "🔹 Обычные объекты:\n"
+        message = message .. "Обычные объекты:\n"
         for _, objData in ipairs(regularObjects) do
-            local emoji = OBJECT_EMOJIS[objData.name] or "🔸"
-            local mutationEmoji = getMutationEmoji(objData.mutation)
-            
-            message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
+            message = message .. string.format("%s (%s)", objData.name, objData.finalIncome)
             
             if #objData.traits > 0 then
-                message = message .. " " .. table.concat(objData.traits, ",")
+                message = message .. " " .. table.concat(objData.traits, " ")
             end
             
             message = message .. "\n"
         end
     end
     
-    if serverId ~= "Одиночная игра" then
+    if getServerId() ~= "Одиночная игра" then
         message = message .. string.format(
-            "\n🚀 Телепорт:\n```lua\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')\n```",
-            serverId
+            "\nТелепорт:\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')",
+            getServerId()
         )
     end
     
-    sendDiscordWebhook(message)
-end
-
-local function sendSpecialTelegramAlert()
-    if not TG_SPECIAL.Enabled or #objectsToNotifySpecial == 0 then return end
-    if not canSendNotification("special") then return end
-    
-    local serverId = getServerId()
-    local username = getAccountInfo()
-    
-    local message = string.format(
-        "🔍 Обнаружены объекты в Steal a brainrot\n"..
-        "👤 Игрок: @%s\n"..
-        "🌐 Сервер: %s\n"..
-        "🕘 Время: %s\n\n"..
-        "🔸 Объекты с низким доходом:\n",
-        username, serverId, os.date("%X")
-    )
-    
-    for _, objData in ipairs(objectsToNotifySpecial) do
-        local emoji = OBJECT_EMOJIS[objData.name] or "🔸"
-        local mutationEmoji = getMutationEmoji(objData.mutation)
-        
-        message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
-        
-        if #objData.traits > 0 then
-            message = message .. " " .. table.concat(objData.traits, ",")
-        end
-        
-        message = message .. "\n"
-    end
-    
-    if serverId ~= "Одиночная игра" then
-        message = message .. string.format(
-            "\n🚀 Телепорт:\n```lua\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')\n```",
-            serverId
-        )
-    end
-    
-    sendSpecialTelegramAlert(message)
+    sendDiscordWebhook(message, #importantObjects > 0)
 end
 
 local function playDetectionSound()
@@ -761,7 +680,7 @@ UserInputService.InputBegan:Connect(function(input)
         end
         
         lastScanTime = now
-        print("\n🔍 Начинаем сканирование всех объектов...")
+        print("\nНачинаем сканирование всех объектов...")
         
         local foundCount = 0
         
@@ -786,7 +705,7 @@ UserInputService.InputBegan:Connect(function(input)
         end
         
         if foundCount == 0 then
-            print("❌ Объекты не найдены")
+            print("Объекты не найдены")
         else
             print("\n=== РЕЗУЛЬТАТ ===")
             print("Найдено объектов:", foundCount)
