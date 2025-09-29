@@ -29,10 +29,9 @@ local SCANNER_SETTINGS = {
     IgnoreClasses = {"SurfaceAppearance", "Part"}
 }
 
--- Настройки Telegram ботов
-local TG_MAIN = {
-    Token = "8158106101:AAGTaP3CEjnWh1rjNjj7UlqfJisani8Gwz8",
-    ChatId = "-1003183143717",
+-- Настройки Discord Webhook (Main) и Telegram (Special)
+local DISCORD_MAIN = {
+    WebhookUrl = "https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz",
     Enabled = true,
     ImportantObjects = {
         ["Pot Hotspdddot"] = true,
@@ -162,8 +161,6 @@ local TRAIT_MULTIPLIERS = {
     ["Skeleton"] = 4,
     ["Spider"] = 4.5,
     ["Sombrero"] = 5
-    
-    
 }
 
 -- Эмодзи для объектов
@@ -373,7 +370,6 @@ local function findTraits(obj)
     return traits
 end
 
-
 local function scanObject(obj)
     if not obj or not obj.Parent then return nil end
     
@@ -519,86 +515,62 @@ local function canSendNotification(botType)
     return true
 end
 
-local function sendMainTelegramAlert()
-    if not TG_MAIN.Enabled or not request or #objectsToNotifyMain == 0 then return end
-    if not canSendNotification("main") then return end
+-- Функция отправки в Discord Webhook (Main)
+local function sendDiscordWebhook(message, isImportant)
+    if not DISCORD_MAIN.Enabled or not request then return end
     
-    local serverId = getServerId()
     local username = getAccountInfo()
+    local serverId = getServerId()
     
-    local importantObjects = {}
-    local regularObjects = {}
+    local embed = {
+        {
+            title = isImportant and "🚨 ВАЖНЫЕ ОБЪЕКТЫ" or "🔹 ОБНАРУЖЕНЫ ОБЪЕКТЫ",
+            description = message,
+            color = isImportant and 0xff0000 or 0x00ff00,
+            fields = {
+                {
+                    name = "👤 Игрок",
+                    value = username,
+                    inline = true
+                },
+                {
+                    name = "🌐 Сервер",
+                    value = serverId,
+                    inline = true
+                },
+                {
+                    name = "🕘 Время",
+                    value = os.date("%X"),
+                    inline = true
+                }
+            },
+            footer = {
+                text = "Steal a brainrot ESP System"
+            }
+        }
+    }
     
-    for _, objData in ipairs(objectsToNotifyMain) do
-        if TG_MAIN.ImportantObjects[objData.name] then
-            table.insert(importantObjects, objData)
-        else
-            table.insert(regularObjects, objData)
-        end
-    end
-    
-    local message = string.format(
-        "*🔍 Обнаружены объекты в Steal a brainrot*\n"..
-        "👤 Игрок: `@%s`\n"..
-        "🌐 Сервер: `%s`\n"..
-        "🕘 Время: `%s`\n\n",
-        username, serverId, os.date("%X")
-    )
-    
-    if #importantObjects > 0 then
-        message = message .. "*🚨 ВАЖНЫЕ ОБЪЕКТЫ:*\n"
-        for _, objData in ipairs(importantObjects) do
-            local emoji = OBJECT_EMOJIS[objData.name] or "⚠️"
-            local mutationEmoji = getMutationEmoji(objData.mutation)
-            
-            message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
-            
-            if #objData.traits > 0 then
-                message = message .. " " .. table.concat(objData.traits, " ")
-            end
-            
-            message = message .. "\n"
-        end
-        message = message .. "\n"
-    end
-    
-    if #regularObjects > 0 then
-        message = message .. "*🔹 Обычные объекты:*\n"
-        for _, objData in ipairs(regularObjects) do
-            local emoji = OBJECT_EMOJIS[objData.name] or "🔸"
-            local mutationEmoji = getMutationEmoji(objData.mutation)
-            
-            message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
-            
-            if #objData.traits > 0 then
-                message = message .. " " .. table.concat(objData.traits, " ")
-            end
-            
-            message = message .. "\n"
-        end
-    end
-    
-    if serverId ~= "Одиночная игра" then
-        message = message .. string.format(
-            "\n🚀 Телепорт:\n```lua\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')\n```",
-            serverId
-        )
-    end
-    
-    request({
-        Url = "https://api.telegram.org/bot"..TG_MAIN.Token.."/sendMessage",
-        Method = "POST",
-        Headers = {
-            ["Content-Type"] = "application/json"
-        },
-        Body = HttpService:JSONEncode({
-            chat_id = TG_MAIN.ChatId,
-            text = message,
-            parse_mode = "Markdown"
+    local success, result = pcall(function()
+        return request({
+            Url = DISCORD_MAIN.WebhookUrl,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode({
+                content = isImportant and "@everyone" or nil,
+                embeds = embed,
+                username = "Brainrot ESP"
+            })
         })
-    })
+    end)
+    
+    if not success then
+        warn("Ошибка отправки в Discord: " .. tostring(result))
+    end
 end
 
+-- Функция отправки в Telegram (Special)
 local function sendSpecialTelegramAlert()
     if not TG_SPECIAL.Enabled or not request or #objectsToNotifySpecial == 0 then return end
     if not canSendNotification("special") then return end
@@ -647,6 +619,66 @@ local function sendSpecialTelegramAlert()
             parse_mode = "Markdown"
         })
     })
+end
+
+local function sendMainDiscordAlert()
+    if not DISCORD_MAIN.Enabled or #objectsToNotifyMain == 0 then return end
+    if not canSendNotification("main") then return end
+    
+    local importantObjects = {}
+    local regularObjects = {}
+    
+    for _, objData in ipairs(objectsToNotifyMain) do
+        if DISCORD_MAIN.ImportantObjects[objData.name] then
+            table.insert(importantObjects, objData)
+        else
+            table.insert(regularObjects, objData)
+        end
+    end
+    
+    local message = ""
+    
+    if #importantObjects > 0 then
+        message = message .. "**🚨 ВАЖНЫЕ ОБЪЕКТЫ:**\n"
+        for _, objData in ipairs(importantObjects) do
+            local emoji = OBJECT_EMOJIS[objData.name] or "⚠️"
+            local mutationEmoji = getMutationEmoji(objData.mutation)
+            
+            message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
+            
+            if #objData.traits > 0 then
+                message = message .. " " .. table.concat(objData.traits, " ")
+            end
+            
+            message = message .. "\n"
+        end
+        message = message .. "\n"
+    end
+    
+    if #regularObjects > 0 then
+        message = message .. "**🔹 Обычные объекты:**\n"
+        for _, objData in ipairs(regularObjects) do
+            local emoji = OBJECT_EMOJIS[objData.name] or "🔸"
+            local mutationEmoji = getMutationEmoji(objData.mutation)
+            
+            message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
+            
+            if #objData.traits > 0 then
+                message = message .. " " .. table.concat(objData.traits, " ")
+            end
+            
+            message = message .. "\n"
+        end
+    end
+    
+    if getServerId() ~= "Одиночная игра" then
+        message = message .. string.format(
+            "\n**🚀 Телепорт:**\n```lua\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')\n```",
+            getServerId()
+        )
+    end
+    
+    sendDiscordWebhook(message, #importantObjects > 0)
 end
 
 local function playDetectionSound()
@@ -700,7 +732,7 @@ local function updateESP(deltaTime)
                     playDetectionSound()
                     
                     -- Добавляем в соответствующий список для уведомлений
-                    if TG_MAIN.ImportantObjects[obj.Name] or objData.numericIncome >= 25000000 then
+                    if DISCORD_MAIN.ImportantObjects[obj.Name] or objData.numericIncome >= 25000000 then
                         table.insert(objectsToNotifyMain, objData)
                     else
                         table.insert(objectsToNotifySpecial, objData)
@@ -717,7 +749,7 @@ local function updateESP(deltaTime)
     
     -- Отправка уведомлений (независимо друг от друга)
     if #objectsToNotifyMain > 0 then
-        sendMainTelegramAlert()
+        sendMainDiscordAlert()
     end
     
     if #objectsToNotifySpecial > 0 then
