@@ -163,6 +163,58 @@ local TRAIT_MULTIPLIERS = {
     ["Sombrero"] = 5
 }
 
+-- Эмодзи для объектов
+local OBJECT_EMOJIS = {
+    ["La Vacca Saturno Saturnita"] = "🐮",
+    ["Chimpanzini Spiderini"] = "🕷",
+    ["Los Tralaleritos"] = "🐟",
+    ["Las Tralaleritas"] = "🌸",
+    ["Graipuss Medussi"] = "🦑",
+    ["Torrtuginni Dragonfrutini"] = "🐉",
+    ["Pot Hotspot"] = "📱",
+    ["La Grande Combinasion"] = "❗️",
+    ["Garama and Madundung"] = "🥫",
+    ["Secret Lucky Block"] = "⬛️",
+    ["Dragon Cannelloni"] = "🐲",
+    ["Nuclearo Dinossauro"] = "🦕",
+    ["Las Vaquitas Saturnitas"] = "👦",
+    ["Chicleteira Bicicleteira"] = "🚲",
+    ["Los Combinasionas"] = "⚒️",
+    ["Agarrini la Palini"] = "🥄",
+    ["Los Hotspotsitos"] = "☎️",
+    ["Esok Sekolah"] = "🏠",
+    ["Nooo My Hotspot"] = "👽",
+    ["La Supreme Combinasion"] = "🔫",
+    ["Admin Lucky Block"] = "🆘",
+    ["Ketupat Kepat"] = "🍏",
+    ["Strawberry Elephant"] = "🐘",
+    ["Spaghetti Tualetti"] = "🚽",
+    ["Ketchuru and Musturu"] = "🍾",
+    ["Los Nooo My Hotspdffsfsfotsitos"] = "🥔",
+    ["La Kark666erkar Combinasion"] = "🥊",
+    ["Tralaledon"] = "🦈",
+    ["Los Bros"] = "✊",
+    ["La Extinct Grande"] = "🩻", 
+    ["Los Chicleteiras"] = "🚳",
+    ["Las Sis"] = "👧",
+    ["Tacorita Bicicleta"] = "🌮",
+    ["Tictac Sahur"] = "🕰️",
+    ["Celularcini Visiosini"] = "📞",
+    ["Los Primos"] = "🐵",
+    ["Tang Tang Keletang"] = "🏏"
+}
+
+-- Эмодзи для мутаций
+local MUTATION_EMOJIS = {
+    ["Gold"] = "🟨",
+    ["Lava"] = "🟧",
+    ["Rainbow"] = "🌈",
+    ["Diamond"] = "💎",
+    ["Candy"] = "🍬",
+    ["Bloodrot"] = "🟥",
+    ["Galaxy"] = "🟪"
+}
+
 -- Список объектов
 local OBJECT_NAMES = {
     "La Vacca Saturno Saturnita",
@@ -258,6 +310,10 @@ local function formatIncomeNumber(num)
     else
         return string.format("%d/s", num)
     end
+end
+
+local function getMutationEmoji(mutation)
+    return MUTATION_EMOJIS[mutation] or "⬜️"
 end
 
 -- Функции для сбора информации об объектах
@@ -382,23 +438,24 @@ local function createColoredText(objData)
     textLabel.TextXAlignment = Enum.TextXAlignment.Left
     textLabel.TextStrokeTransparency = 0.3
     
+    local emoji = OBJECT_EMOJIS[objData.name] or "🔹"
     local incomeText = objData.finalIncome ~= "???/s" and objData.finalIncome or "???"
     
     local richText = string.format(
-        '%s %s: %s',
-        objData.name, incomeText
+        '<font color="rgb(255,255,255)">%s%s %s: %s</font>',
+        emoji, getMutationEmoji(objData.mutation), objData.name, incomeText
     )
     
     -- Показываем мутации и трейты с их множителями
     if objData.mutation and MUTATION_MULTIPLIERS[objData.mutation] then
         richText = richText .. string.format(
-            '\n%s x%.2f',
+            '\n<font color="rgb(255,255,150)">%s x%.2f</font>',
             objData.mutation, objData.mutationMultiplier
         )
     end
     
     if #objData.traits > 0 then
-        richText = richText .. '\n'
+        richText = richText .. '\n<font color="rgb(150,255,150)">'
         for _, trait in ipairs(objData.traits) do
             if TRAIT_MULTIPLIERS[trait] then
                 richText = richText .. string.format('%s x%.2f ', trait, TRAIT_MULTIPLIERS[trait])
@@ -406,10 +463,11 @@ local function createColoredText(objData)
                 richText = richText .. trait .. ' '
             end
         end
+        richText = richText .. '</font>'
     end
     
     textLabel.Text = richText
-    textLabel.RichText = false
+    textLabel.RichText = true
     return textLabel
 end
 
@@ -457,7 +515,7 @@ local function canSendNotification(botType)
     return true
 end
 
--- Функция отправки в Discord Webhook (Main) - упрощенная версия без эмбедов
+-- Функция отправки в Discord Webhook (Main) - упрощенная версия без эмбедов, но с эмодзи
 local function sendDiscordWebhook(message, isImportant)
     if not DISCORD_MAIN.Enabled or not request then return end
     
@@ -483,7 +541,7 @@ local function sendDiscordWebhook(message, isImportant)
     end
 end
 
--- Функция отправки в Telegram (Special)
+-- Функция отправки в Telegram (Special) - оставлена без изменений
 local function sendSpecialTelegramAlert()
     if not TG_SPECIAL.Enabled or not request or #objectsToNotifySpecial == 0 then return end
     if not canSendNotification("special") then return end
@@ -492,16 +550,19 @@ local function sendSpecialTelegramAlert()
     local username = getAccountInfo()
     
     local message = string.format(
-        "Обнаружены объекты в Steal a brainrot\n"..
-        "Игрок: %s\n"..
-        "Сервер: %s\n"..
-        "Время: %s\n\n"..
-        "Объекты с низким доходом:\n",
+        "*🔍 Обнаружены объекты в Steal a brainrot*\n"..
+        "👤 Игрок: `@%s`\n"..
+        "🌐 Сервер: `%s`\n"..
+        "🕘 Время: `%s`\n\n"..
+        "*🔸 Объекты с низким доходом:*\n",
         username, serverId, os.date("%X")
     )
     
     for _, objData in ipairs(objectsToNotifySpecial) do
-        message = message .. string.format("%s (%s)", objData.name, objData.finalIncome)
+        local emoji = OBJECT_EMOJIS[objData.name] or "🔸"
+        local mutationEmoji = getMutationEmoji(objData.mutation)
+        
+        message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
         
         if #objData.traits > 0 then
             message = message .. " " .. table.concat(objData.traits, " ")
@@ -512,7 +573,7 @@ local function sendSpecialTelegramAlert()
     
     if serverId ~= "Одиночная игра" then
         message = message .. string.format(
-            "\nТелепорт:\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')",
+            "\n🚀 Телепорт:\n```lua\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')\n```",
             serverId
         )
     end
@@ -525,7 +586,8 @@ local function sendSpecialTelegramAlert()
         },
         Body = HttpService:JSONEncode({
             chat_id = TG_SPECIAL.ChatId,
-            text = message
+            text = message,
+            parse_mode = "Markdown"
         })
     })
 end
@@ -548,9 +610,12 @@ local function sendMainDiscordAlert()
     local message = ""
     
     if #importantObjects > 0 then
-        message = message .. "ВАЖНЫЕ ОБЪЕКТЫ:\n"
+        message = message .. "🚨 ВАЖНЫЕ ОБЪЕКТЫ:\n"
         for _, objData in ipairs(importantObjects) do
-            message = message .. string.format("%s (%s)", objData.name, objData.finalIncome)
+            local emoji = OBJECT_EMOJIS[objData.name] or "⚠️"
+            local mutationEmoji = getMutationEmoji(objData.mutation)
+            
+            message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
             
             if #objData.traits > 0 then
                 message = message .. " " .. table.concat(objData.traits, " ")
@@ -562,9 +627,12 @@ local function sendMainDiscordAlert()
     end
     
     if #regularObjects > 0 then
-        message = message .. "Обычные объекты:\n"
+        message = message .. "🔹 Обычные объекты:\n"
         for _, objData in ipairs(regularObjects) do
-            message = message .. string.format("%s (%s)", objData.name, objData.finalIncome)
+            local emoji = OBJECT_EMOJIS[objData.name] or "🔸"
+            local mutationEmoji = getMutationEmoji(objData.mutation)
+            
+            message = message .. string.format("%s%s %s (%s)", emoji, mutationEmoji, objData.name, objData.finalIncome)
             
             if #objData.traits > 0 then
                 message = message .. " " .. table.concat(objData.traits, " ")
@@ -576,7 +644,7 @@ local function sendMainDiscordAlert()
     
     if getServerId() ~= "Одиночная игра" then
         message = message .. string.format(
-            "\nТелепорт:\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')",
+            "\n🚀 Телепорт:\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(109983668079237, '%s')",
             getServerId()
         )
     end
@@ -680,7 +748,7 @@ UserInputService.InputBegan:Connect(function(input)
         end
         
         lastScanTime = now
-        print("\nНачинаем сканирование всех объектов...")
+        print("\n🔍 Начинаем сканирование всех объектов...")
         
         local foundCount = 0
         
@@ -705,7 +773,7 @@ UserInputService.InputBegan:Connect(function(input)
         end
         
         if foundCount == 0 then
-            print("Объекты не найдены")
+            print("❌ Объекты не найдены")
         else
             print("\n=== РЕЗУЛЬТАТ ===")
             print("Найдено объектов:", foundCount)
