@@ -607,7 +607,17 @@ local function sendMainDiscordAlert()
         end
     end
     
-    local message = ""
+    local username = getAccountInfo()
+    local serverId = getServerId()
+    local currentTime = os.date("%X")
+    
+    local message = string.format(
+        "🔍 Обнаружены объекты в Steal a brainrot\n"..
+        "👤 Игрок: @%s\n"..
+        "🌐 Сервер: %s\n"..
+        "🕘 Время: %s\n\n",
+        username, serverId, currentTime
+    )
     
     if #importantObjects > 0 then
         message = message .. "🚨 ВАЖНЫЕ ОБЪЕКТЫ:\n"
