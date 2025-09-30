@@ -5,7 +5,19 @@
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
-
+local function getHttpFunction()
+    if http_request then
+        return http_request
+    elseif request then
+        return request
+    elseif syn and syn.request then
+        return syn.request
+    elseif fluxus and fluxus.request then
+        return fluxus.request
+    else
+        return nil
+    end
+end
 -- ⚙️ НАСТРОЙКИ
 local INCOME_THRESHOLD = 50_000_000 -- 50M/s минимум для уведомления
 local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz"
