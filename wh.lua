@@ -13,19 +13,7 @@ local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/142149421457080748
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
-local function getHttpFunction()
-    if http_request then
-        return http_request
-    elseif request then
-        return request
-    elseif syn and syn.request then
-        return syn.request
-    elseif fluxus and fluxus.request then
-        return fluxus.request
-    else
-        return nil
-    end
-end
+
 
 -- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ВАЖНОСТЬЮ
 local OBJECTS = {
