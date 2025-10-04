@@ -54,6 +54,7 @@ local OBJECTS = {
     ['Money Money Puggy'] = { emoji = '🐶', important = true },
     ['Burguro And Fryuro'] = { emoji = '🍔', important = true },
     ['Chillin Chili'] = { emoji = '🌶️', important = true },
+    ['La Secret Combinasion'] = { emoji = '❓', important = true },
     
 }
 
