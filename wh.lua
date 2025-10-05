@@ -48,13 +48,14 @@ local OBJECTS = {
     ['Las Sis'] = { emoji = '👧', important = true },
     ['Tacorita Bicicleta'] = { emoji = '📱', important = false },
     ['Tictac Sahur'] = { emoji = '🕰️', important = true },
-    ['Celularcini Visiosini'] = { emoji = '📞', important = true },
+    ['Celularcini Viciosini'] = { emoji = '📞', important = true },
     ['Los Primos'] = { emoji = '🙆‍♂️', important = true },
     ['Tang Tang Keletang'] = { emoji = '📢', important = true },
     ['Money Money Puggy'] = { emoji = '🐶', important = true },
     ['Burguro And Fryuro'] = { emoji = '🍔', important = true },
     ['Chillin Chili'] = { emoji = '🌶️', important = true },
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
+    
     
 }
 
