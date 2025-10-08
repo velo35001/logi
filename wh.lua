@@ -1,4 +1,4 @@
--- 🎯 BRAINROT INCOME SCANNER v2.0 (МОДИФИЦИРОВАННАЯ ВЕРСИЯ)
+-- 🎯 BRAINROT INCOME SCANNER v2.0 (ПОЛНАЯ ВЕРСИЯ)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
 -- Запуск: автоматически при старте + по клавише F
 
@@ -7,33 +7,56 @@ local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
-local INCOME_THRESHOLD = 50_000_000 -- 50M/s минимум для обычных объектов
-local HIGH_INCOME_THRESHOLD = 500_000_000 -- 500M/s для специальных объектов
+local INCOME_THRESHOLD = 50_000_000 -- 50M/s минимум для уведомления
 local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
 -- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ВАЖНОСТЬЮ
 local OBJECTS = {
-    -- Специальные объекты (только от 500M/s)
-    ['Spaghetti Tualetti'] = { emoji = '🚽', important = false, highThreshold = true },
-    ['Los Bros'] = { emoji = '📱', important = false, highThreshold = true },
-    ['Tralaledon'] = { emoji = '🦈', important = false, highThreshold = true },
-    ['Tictac Sahur'] = { emoji = '🕰️', important = false, highThreshold = true },
-    ['Tang Tang Keletang'] = { emoji = '📢', important = false, highThreshold = true },
-    ['Chillin Chili'] = { emoji = '🌶️', important = false, highThreshold = true },
-    ['Ketupat Kepat'] = { emoji = '🍏', important = false, highThreshold = true },
+    ['La Vacca Saturno Saturnita'] = { emoji = '🐮', important = false },
+    ['Chimpanzini Spiderini'] = { emoji = '🕷', important = false },
+    ['Los Tralaleritos'] = { emoji = '🐟', important = false },
+    ['Las Tralaleritas'] = { emoji = '🌸', important = false },
+    ['Graipuss Medussi'] = { emoji = '🦑', important = false },
+    ['Torrtuginni Dragonfrutini'] = { emoji = '🐉', important = false },
+    ['Pot Hotspot'] = { emoji = '📱', important = false },
+    ['La Grande Combinasion'] = { emoji = '❗️', important = true },
+    ['Garama and Madundung'] = { emoji = '🍝', important = true },
+    ['Secret Lucksfsfsfy Block'] = { emoji = '⬛️', important = false },
+    ['Dragon Cannelloni'] = { emoji = '🐲', important = true },
+    ['Nuclearo Dinossauro'] = { emoji = '🦕', important = true },
+    ['Las Vaquitas Saturnitas'] = { emoji = '👦', important = false },
+    ['Chicleteira Bicicleteira'] = { emoji = '🚲', important = true },
+    ['Los Combina31313sionas'] = { emoji = '⚒️', important = true },
+    ['Agarrini la Palini'] = { emoji = '🥄', important = false },
+    ['Los Hotspotsitos'] = { emoji = '☎️', important = true },
+    ['Esok Sekolah'] = { emoji = '🏠', important = true },
+    ['Nooo My Hotspot'] = { emoji = '👽', important = false },
+    ['La Supreme Combinasion'] = { emoji = '🔫', important = true },
+    ['Admin Lucky Block'] = { emoji = '🆘', important = false },
+    ['Ketupat Kepat'] = { emoji = '🍏', important = true },
+    ['Strawberry Elephant'] = { emoji = '🐘', important = true },
+    ['Spaghetti Tualetti'] = { emoji = '🚽', important = true },
+    ['Ketchuru and Musturu'] = { emoji = '🍾', important = true },
+    ['Los Nooo Mysffsfsf Hotspotsitos'] = { emoji = '🥔', important = false },
+    ['La Kark56656erkar Combinasion'] = { emoji = '🥊', important = false },
+    ['Los Bros'] = { emoji = '📱', important = true },
+    ['Tralaledon'] = { emoji = '🦈', important = true },
+    ['La Extinct Grande'] = { emoji = '🩻', important = true },
+    ['Los Chicleteiras'] = { emoji = '🚳', important = true },
+    ['Las Sis'] = { emoji = '👧', important = true },
+    ['Tacorita Bicicleta'] = { emoji = '📱', important = false },
+    ['Tictac Sahur'] = { emoji = '🕰️', important = true },
+    ['Celularcini Viciosini'] = { emoji = '📞', important = true },
+    ['Los Primos'] = { emoji = '🙆‍♂️', important = true },
+    ['Tang Tang Keletang'] = { emoji = '📢', important = true },
+    ['Money Money Puggy'] = { emoji = '🐶', important = true },
+    ['Burguro And Fryuro'] = { emoji = '🍔', important = true },
+    ['Chillin Chili'] = { emoji = '🌶️', important = true },
+    ['La Secret Combinasion'] = { emoji = '❓', important = true },
     
-    -- Важные объекты (всегда показываются)
-    ['Burguro And Fryuro'] = { emoji = '🍔', important = true, highThreshold = false },
-    ['Los Primos'] = { emoji = '🙆‍♂️', important = true, highThreshold = false },
-    ['Ketchuru and Musturu'] = { emoji = '🍾', important = true, highThreshold = false },
-    ['Strawberry Elephant'] = { emoji = '🐘', important = true, highThreshold = false },
-    ['La Supreme Combinasion'] = { emoji = '🔫', important = true, highThreshold = false },
-    ['Nuclearo Dinossauro'] = { emoji = '🦕', important = true, highThreshold = false },
-    ['Dragon Cannelloni'] = { emoji = '🐲', important = true, highThreshold = false },
-    ['Garama and Madundung'] = { emoji = '🍝', important = true, highThreshold = false },
-    ['La Secret Combinasion'] = { emoji = '❓', important = true, highThreshold = false },
+    
 }
 
 -- Создаем список важных объектов
@@ -336,12 +359,6 @@ local function shouldShow(name, gen)
     if ALWAYS_IMPORTANT[name] then
         return true
     end
-    
-    local objConfig = OBJECTS[name]
-    if objConfig and objConfig.highThreshold then
-        return (type(gen) == 'number') and gen >= HIGH_INCOME_THRESHOLD
-    end
-    
     return (type(gen) == 'number') and gen >= INCOME_THRESHOLD
 end
 
@@ -400,13 +417,11 @@ local function sendDiscordNotification(filteredObjects)
         local obj = sorted[i]
         local emoji = OBJECTS[obj.name].emoji or '💰'
         local mark = ALWAYS_IMPORTANT[obj.name] and '⭐ ' or ''
-        local highMark = OBJECTS[obj.name].highThreshold and '⚡ ' or ''
         table.insert(
             objectsList,
             string.format(
-                '%s%s%s **%s** (%s)',
+                '%s%s **%s** (%s)',
                 mark,
-                highMark,
                 emoji,
                 obj.name,
                 formatIncomeNumber(obj.gen)
@@ -499,12 +514,10 @@ local function scanAndNotify()
     for _, obj in ipairs(filtered) do
         local emoji = OBJECTS[obj.name].emoji or '💰'
         local mark = ALWAYS_IMPORTANT[obj.name] and '⭐ ' or ''
-        local highMark = OBJECTS[obj.name].highThreshold and '⚡ ' or ''
         print(
             string.format(
-                '%s%s%s %s: %s (%s)',
+                '%s%s %s: %s (%s)',
                 mark,
-                highMark,
                 emoji,
                 obj.name,
                 formatIncomeNumber(obj.gen),
