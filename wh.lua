@@ -7,7 +7,7 @@ local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
-local INCOME_THRESHOLD = 50_000_000 -- 50M/s минимум для уведомления
+local INCOME_THRESHOLD = 100_000_000 -- 50M/s минимум для уведомления
 local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
@@ -19,19 +19,19 @@ local OBJECTS = {
     ['Dragon Cannelloni'] = { emoji = '🐲', important = true },
     ['Nuclearo Dinossauro'] = { emoji = '🦕', important = true },
     ['La Supreme Combinasion'] = { emoji = '🔫', important = true },
-    ['Ketupat Kepat'] = { emoji = '🍏', important = true },
+    ['Ketupat Kepat'] = { emoji = '🍏', important = false },
     ['Strawberry Elephant'] = { emoji = '🐘', important = true },
-    ['Spaghetti Tualetti'] = { emoji = '🚽', important = true },
+    ['Spaghetti Tualetti'] = { emoji = '🚽', important = false },
     ['Ketchuru and Musturu'] = { emoji = '🍾', important = true },
-    ['Los Bros'] = { emoji = '📱', important = true },
-    ['Tralaledon'] = { emoji = '🦈', important = true },
-    ['Las Sis'] = { emoji = '👧', important = true },
-    ['Tictac Sahur'] = { emoji = '🕰️', important = true },
-    ['Celularcini Viciosini'] = { emoji = '📞', important = true },
+    ['Los Bros'] = { emoji = '📱', important = false },
+    ['Tralaledon'] = { emoji = '🦈', important = false },
+    ['Las Sis'] = { emoji = '👧', important = false },
+    ['Tictac Sahur'] = { emoji = '🕰️', important = false },
+    ['Celularcini Viciosini'] = { emoji = '📞', important = false },
     ['Los Primos'] = { emoji = '🙆‍♂️', important = true },
-    ['Tang Tang Keletang'] = { emoji = '📢', important = true },
+    ['Tang Tang Keletang'] = { emoji = '📢', important = false },
     ['Burguro And Fryuro'] = { emoji = '🍔', important = true },
-    ['Chillin Chili'] = { emoji = '🌶️', important = true },
+    ['Chillin Chili'] = { emoji = '🌶️', important = false },
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
     
     
