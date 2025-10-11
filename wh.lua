@@ -7,7 +7,7 @@ local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
-local INCOME_THRESHOLD = 50_000_000 -- 50M/s минимум для уведомления
+local INCOME_THRESHOLD = 10_000_000 -- 50M/s минимум для уведомления
 local HIGH_PRIORITY_THRESHOLD = 500_000_000 -- 500M/s для особо важных объектов
 local MEDIUM_PRIORITY_THRESHOLD = 100_000_000 -- 100M/s для среднего приоритета
 local DISCORD_WEBHOOK_URL =
