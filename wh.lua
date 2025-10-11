@@ -35,6 +35,7 @@ local OBJECTS = {
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
     ['Eviledon'] = { emoji = '😡', important = true },
     ['Los Mobilis'] = { emoji = '🫘', important = true },
+    ['La Spooky Grande'] = { emoji = '🎃', important = true,high_priority = true },
 }
 
 -- Создаем списки важных объектов
