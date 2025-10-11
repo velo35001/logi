@@ -7,9 +7,12 @@ local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
-local INCOME_THRESHOLD = 50_000_000 -- 50M/s минимум для уведомления
 local HIGH_PRIORITY_THRESHOLD = 500_000_000 -- 500M/s для особо важных объектов
+local MIDDLE_PRIORITY_THRESHOLD = 100_000_000 -- 100M/s для среднего приоритета
+
+-- Webhook URLs
 local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421498530756952287/XKkzMBw09MJGBC9VMv6A5yMkE1IxYLtQWqq_bKXCiK0etZSuTvnOutuWRr9HQA7H6nv1'
+local MIDDLE_PRIORITY_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1426282608710647952/bmfmWPMug07ht7nRa_QeCVi7tfItybezKVkZ2tmw7lsODttiUnSnYJArl6UchxqIbeyT'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
@@ -36,7 +39,10 @@ local OBJECTS = {
     ['Eviledon'] = { emoji = '😡', important = true },
     ['Los Mobilis'] = { emoji = '🫘', important = true, high_priority = true },
     ['La Spooky Grande'] = { emoji = '🎃', important = true, high_priority = true },
-    ['Spooky and Pumpky'] = { emoji = '🦇', important = true, },
+    ['Spooky and Pumpky'] = { emoji = '🦇', important = true },
+    ['Chicleteira Bicicleteira'] = { emoji = '🚲', important = true },
+    ['Los Combinasionas'] = { emoji = '⚒️', important = true },
+    ['La Grande Combinasion'] = { emoji = '❗️', important = true },
 }
 
 -- Создаем списки важных объектов
@@ -339,13 +345,6 @@ local function collectAll(timeoutSec)
     return collected
 end
 
-local function shouldShow(name, gen)
-    if ALWAYS_IMPORTANT[name] then
-        return true
-    end
-    return (type(gen) == 'number') and gen >= INCOME_THRESHOLD
-end
-
 -- 📤 DISCORD УВЕДОМЛЕНИЯ
 local function getRequester()
     return http_request
@@ -355,7 +354,7 @@ local function getRequester()
         or (KRNL_HTTP and KRNL_HTTP.request)
 end
 
-local function sendDiscordNotification(filteredObjects)
+local function sendDiscordNotification(filteredObjects, webhookUrl, isMiddlePriority)
     local req = getRequester()
     if not req then
         warn('❌ Нет HTTP API в executor')
@@ -421,12 +420,18 @@ local function sendDiscordNotification(filteredObjects)
         jobId
     )
 
+    local title = isMiddlePriority and '💎 Найдены объекты с прибылью от 100M/s!' or '💎 Найдены ценные объекты в Steal a brainrot!'
+    local color = isMiddlePriority and 0x00ff00 or 0x2f3136
+    local footerText = isMiddlePriority and 
+        string.format('Найдено: %d объектов от 100M/s • %s', #filteredObjects, os.date('%H:%M:%S')) :
+        string.format('Найдено: %d важных (%d 🔥) • %s', #filteredObjects, #highPriority, os.date('%H:%M:%S'))
+
     local payload = {
         username = '🎯 Brainrot Scanner',
         embeds = {
             {
-                title = '💎 Найдены ценные объекты в Steal a brainrot!',
-                color = 0x2f3136,
+                title = title,
+                color = color,
                 fields = {
                     {
                         name = '🆔 Сервер (Job ID)',
@@ -434,7 +439,7 @@ local function sendDiscordNotification(filteredObjects)
                         inline = false,
                     },
                     {
-                        name = '💰 Важные объекты:',
+                        name = '💰 Объекты:',
                         value = objectsText,
                         inline = false,
                     },
@@ -445,12 +450,7 @@ local function sendDiscordNotification(filteredObjects)
                     },
                 },
                 footer = {
-                    text = string.format(
-                        'Найдено: %d важных (%d 🔥) • %s',
-                        #filteredObjects,
-                        #highPriority,
-                        os.date('%H:%M:%S')
-                    ),
+                    text = footerText,
                 },
                 timestamp = DateTime.now():ToIsoDate(),
             },
@@ -460,12 +460,13 @@ local function sendDiscordNotification(filteredObjects)
     print(
         '📤 Отправляю уведомление с',
         #filteredObjects,
-        'объектами'
+        'объектами на',
+        isMiddlePriority and 'второй webhook' or 'основной webhook'
     )
 
     local ok, res = pcall(function()
         return req({
-            Url = DISCORD_WEBHOOK_URL,
+            Url = webhookUrl,
             Method = 'POST',
             Headers = { ['Content-Type'] = 'application/json' },
             Body = HttpService:JSONEncode(payload),
@@ -484,32 +485,39 @@ local function scanAndNotify()
     print('🔍 Сканирую все объекты...')
     local allFound = collectAll(8.0) -- 8 секунд таймаут
 
-    -- Фильтрация по важности и доходу (с учетом разных порогов)
-    local filtered = {}
+    -- Фильтрация по важности и доходу
+    local filteredForMain = {} -- Для основного webhook (важные объекты ЛЮБАЯ прибыль + неважные ≥500M/s)
+    local filteredForMiddle = {} -- Для второго webhook (неважные объекты ≥100M/s)
+
     for _, obj in ipairs(allFound) do
         if OBJECTS[obj.name] then
-            -- Для высокоприоритетных объектов проверяем порог 500M/s
-            if HIGH_PRIORITY_OBJECTS[obj.name] then
+            -- ВАЖНЫЕ ОБЪЕКТЫ: всегда идут в основной webhook независимо от прибыли
+            if ALWAYS_IMPORTANT[obj.name] then
+                table.insert(filteredForMain, obj)
+            -- НЕВАЖНЫЕ ОБЪЕКТЫ: распределяются по прибыли
+            else
+                -- Неважные с прибылью ≥500M/s идут в основной webhook
                 if obj.gen and obj.gen >= HIGH_PRIORITY_THRESHOLD then
-                    table.insert(filtered, obj)
+                    table.insert(filteredForMain, obj)
+                -- Неважные с прибылью ≥100M/s идут во второй webhook
+                elseif obj.gen and obj.gen >= MIDDLE_PRIORITY_THRESHOLD then
+                    table.insert(filteredForMiddle, obj)
                 end
-            -- Для остальных важных объектов проверяем порог 50M/s
-            elseif shouldShow(obj.name, obj.gen) then
-                table.insert(filtered, obj)
             end
         end
     end
 
     -- Вывод в консоль
     print('Найдено всего объектов:', #allFound)
-    print('Показано важных:', #filtered)
+    print('Для основного webhook (важные любые + неважные ≥500M/s):', #filteredForMain)
+    print('Для второго webhook (неважные ≥100M/s):', #filteredForMiddle)
 
-    for _, obj in ipairs(filtered) do
+    for _, obj in ipairs(filteredForMain) do
         local emoji = OBJECTS[obj.name].emoji or '💰'
         local mark = HIGH_PRIORITY_OBJECTS[obj.name] and '🔥 ' or (ALWAYS_IMPORTANT[obj.name] and '⭐ ' or '')
         print(
             string.format(
-                '%s%s %s: %s (%s)',
+                '[MAIN] %s%s %s: %s (%s)',
                 mark,
                 emoji,
                 obj.name,
@@ -519,18 +527,39 @@ local function scanAndNotify()
         )
     end
 
-    -- Отправляем уведомление если есть что показать
-    if #filtered > 0 then
-        sendDiscordNotification(filtered)
+    for _, obj in ipairs(filteredForMiddle) do
+        local emoji = OBJECTS[obj.name].emoji or '💰'
+        print(
+            string.format(
+                '[MIDDLE] %s %s: %s (%s)',
+                emoji,
+                obj.name,
+                formatIncomeNumber(obj.gen),
+                obj.location or 'Unknown'
+            )
+        )
+    end
+
+    -- Отправляем уведомления если есть что показать
+    if #filteredForMain > 0 then
+        sendDiscordNotification(filteredForMain, DISCORD_WEBHOOK_URL, false)
     else
-        print('🔍 Нет объектов для уведомления')
+        print('🔍 Нет объектов для основного webhook')
+    end
+
+    if #filteredForMiddle > 0 then
+        sendDiscordNotification(filteredForMiddle, MIDDLE_PRIORITY_WEBHOOK_URL, true)
+    else
+        print('🔍 Нет объектов для второго webhook')
     end
 end
 
 -- 🚀 ЗАПУСК
 print('🎯 === BRAINROT INCOME SCANNER ЗАПУЩЕН ===')
-print('🔥 Особо важные объекты (≥500M/s): Spaghetti Tualetti, Esok Sekolah, La Extinct Grande, Tang Tang Keletang, Money Money Puggy, Chillin Chili')
-print('⭐ Обычные важные объекты (≥50M/s): все остальные')
+print('🔥 Основной webhook (важные объекты ЛЮБАЯ прибыль + неважные ≥500M/s):', DISCORD_WEBHOOK_URL)
+print('💚 Второй webhook (только неважные объекты ≥100M/s):', MIDDLE_PRIORITY_WEBHOOK_URL)
+print('⭐ Важные объекты (любая прибыль): все объекты из списка')
+print('➕ Новые добавленные объекты: Chicleteira Bicicleteira, Los Combinasionas, La Grande Combinasion')
 scanAndNotify()
 
 -- ⌨️ ПОВТОР ПО КЛАВИШЕ F
