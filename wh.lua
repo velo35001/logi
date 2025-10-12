@@ -371,13 +371,6 @@ local function collectAll(timeoutSec)
     return collected
 end
 
-local function shouldShow(name, gen)
-    if ALWAYS_IMPORTANT[name] then
-        return true
-    end
-    return (type(gen) == 'number') and gen >= INCOME_THRESHOLD
-end
-
 -- 📤 DISCORD УВЕДОМЛЕНИЯ
 local function getRequester()
     return http_request
@@ -398,17 +391,19 @@ local function sendDiscordNotification(filteredObjects, webhookUrl)
     local placeId = game.PlaceId
 
     if #filteredObjects == 0 then
-        print('🔍 Важных объектов не найдено')
+        print('🔍 Объектов для уведомления не найдено')
         return
     end
 
     -- Сортируем по типу и доходу (особо важные сначала, затем обычные важные по убыванию дохода)
-    local highPriority, regularImportant = {}, {}
+    local highPriority, regularImportant, nonImportantHighIncome = {}, {}, {}
     for _, obj in ipairs(filteredObjects) do
         if HIGH_PRIORITY_OBJECTS[obj.name] then
             table.insert(highPriority, obj)
-        else
+        elseif ALWAYS_IMPORTANT[obj.name] then
             table.insert(regularImportant, obj)
+        else
+            table.insert(nonImportantHighIncome, obj)
         end
     end
 
@@ -416,6 +411,9 @@ local function sendDiscordNotification(filteredObjects, webhookUrl)
         return a.gen > b.gen
     end)
     table.sort(regularImportant, function(a, b)
+        return a.gen > b.gen
+    end)
+    table.sort(nonImportantHighIncome, function(a, b)
         return a.gen > b.gen
     end)
 
@@ -426,14 +424,18 @@ local function sendDiscordNotification(filteredObjects, webhookUrl)
     for _, obj in ipairs(regularImportant) do
         table.insert(sorted, obj)
     end
+    for _, obj in ipairs(nonImportantHighIncome) do
+        table.insert(sorted, obj)
+    end
 
     -- Формируем красивый список (максимум 10)
     local objectsList = {}
     for i = 1, math.min(10, #sorted) do
         local obj = sorted[i]
-        local emoji = OBJECTS[obj.name].emoji or '💰'
+        local cfg = OBJECTS[obj.name] or {}
+        local emoji = cfg.emoji or '💰'
         local mark = HIGH_PRIORITY_OBJECTS[obj.name] and '🔥 '
-            or (ALWAYS_IMPORTANT[obj.name] and '⭐ ' or '')
+            or (ALWAYS_IMPORTANT[obj.name] and '⭐ ' or '💎 ')
         table.insert(
             objectsList,
             string.format(
@@ -479,9 +481,8 @@ local function sendDiscordNotification(filteredObjects, webhookUrl)
                 },
                 footer = {
                     text = string.format(
-                        'Найдено: %d важных (%d 🔥) • %s',
+                        'Найдено: %d объектов • %s',
                         #filteredObjects,
-                        #highPriority,
                         os.date('%H:%M:%S')
                     ),
                 },
@@ -490,11 +491,7 @@ local function sendDiscordNotification(filteredObjects, webhookUrl)
         },
     }
 
-    print(
-        '📤 Отправляю уведомление с',
-        #filteredObjects,
-        'объектами'
-    )
+    print('📤 Отправляю уведомление с', #filteredObjects, 'объектами')
 
     local ok, res = pcall(function()
         return req({
@@ -517,78 +514,54 @@ local function scanAndNotify()
     print('🔍 Сканирую все объекты...')
     local allFound = collectAll(8.0) -- 8 секунд таймаут
 
-    -- Фильтрация по важности и доходу (с учетом разных порогов)
-    local highPriorityObjects = {} -- ≥500M/s
-    local mediumPriorityObjects = {} -- ≥100M/s но <500M/s
-    local regularObjects = {} -- ≥50M/s но <100M/s
+    -- ФИЛЬТРАЦИЯ ПО ЛОГИКЕ:
+    -- 1. Все important объекты → на основной вебхук (любой доход)
+    -- 2. Не-important объекты 100M/s-500M/s → на MEDIUM вебхук
+    -- 3. Не-important объекты ≥500M/s → на основной вебхук
+    local discordWebhookObjects = {} -- Important объекты + не-important ≥500M/s
+    local mediumWebhookObjects = {} -- Не-important объекты 100M/s-500M/s
 
     for _, obj in ipairs(allFound) do
-        if OBJECTS[obj.name] then
-            -- Для высокоприоритетных объектов проверяем порог 500M/s
-            if HIGH_PRIORITY_OBJECTS[obj.name] then
-                if obj.gen and obj.gen >= HIGH_PRIORITY_THRESHOLD then
-                    table.insert(highPriorityObjects, obj)
-                elseif obj.gen and obj.gen >= MEDIUM_PRIORITY_THRESHOLD then
-                    table.insert(mediumPriorityObjects, obj)
-                end
-            -- Для остальных важных объектов проверяем пороги
-            elseif shouldShow(obj.name, obj.gen) then
-                if obj.gen >= HIGH_PRIORITY_THRESHOLD then
-                    table.insert(highPriorityObjects, obj)
-                elseif obj.gen >= MEDIUM_PRIORITY_THRESHOLD then
-                    table.insert(mediumPriorityObjects, obj)
-                else
-                    table.insert(regularObjects, obj)
-                end
+        if ALWAYS_IMPORTANT[obj.name] then
+            -- Все important объекты идут на основной вебхук
+            table.insert(discordWebhookObjects, obj)
+        else
+            -- Не-important объекты
+            if obj.gen and obj.gen >= HIGH_PRIORITY_THRESHOLD then
+                -- ≥500M/s → на основной вебхук
+                table.insert(discordWebhookObjects, obj)
+            elseif obj.gen and obj.gen >= MEDIUM_PRIORITY_THRESHOLD then
+                -- 100M/s-500M/s → на MEDIUM вебхук
+                table.insert(mediumWebhookObjects, obj)
             end
         end
     end
 
     -- Вывод в консоль
     print('Найдено всего объектов:', #allFound)
-    print(
-        'Высокоприоритетные (≥500M/s):',
-        #highPriorityObjects
-    )
-    print('Средние (≥100M/s):', #mediumPriorityObjects)
-    print('Обычные важные (≥50M/s):', #regularObjects)
+    print('Объекты для основного вебхука:', #discordWebhookObjects)
+    print('Объекты для MEDIUM вебхука (100M/s-500M/s):', #mediumWebhookObjects)
 
-    -- Отправляем уведомления на разные вебхуки
-    if #highPriorityObjects > 0 or #regularObjects > 0 then
-        local combinedObjects = {}
-        for _, obj in ipairs(highPriorityObjects) do
-            table.insert(combinedObjects, obj)
-        end
-        for _, obj in ipairs(regularObjects) do
-            table.insert(combinedObjects, obj)
-        end
-        sendDiscordNotification(combinedObjects, DISCORD_WEBHOOK_URL)
+    -- Отправка на основной вебхук
+    if #discordWebhookObjects > 0 then
+        sendDiscordNotification(discordWebhookObjects, DISCORD_WEBHOOK_URL)
     end
 
-    if #mediumPriorityObjects > 0 then
-        sendDiscordNotification(mediumPriorityObjects, MEDIUM_WEBHOOK_URL)
+    -- Отправка на MEDIUM вебхук
+    if #mediumWebhookObjects > 0 then
+        sendDiscordNotification(mediumWebhookObjects, MEDIUM_WEBHOOK_URL)
     end
 
-    if
-        #highPriorityObjects == 0
-        and #mediumPriorityObjects == 0
-        and #regularObjects == 0
-    then
+    if #discordWebhookObjects == 0 and #mediumWebhookObjects == 0 then
         print('🔍 Нет объектов для уведомления')
     end
 end
 
 -- 🚀 ЗАПУСК
 print('🎯 === BRAINROT INCOME SCANNER ЗАПУЩЕН ===')
-print(
-    '🔥 Особо важные объекты (≥500M/s): Spaghetti Tualetti, Esok Sekolah, La Extinct Grande, Tang Tang Keletang, Money Money Puggy, Chillin Chili'
-)
-print(
-    '💎 Средние объекты (≥100M/s): отправляются на отдельный вебхук'
-)
-print(
-    '⭐ Обычные важные объекты (≥50M/s): все остальные'
-)
+print('⭐ Important объекты: отправляются на основной вебхук (любой доход)')
+print('💎 Не-important объекты 100M/s-500M/s: отправляются на MEDIUM вебхук')
+print('🚀 Не-important объекты ≥500M/s: отправляются на основной вебхук')
 scanAndNotify()
 
 -- ⌨️ ПОВТОР ПО КЛАВИШЕ F
@@ -608,10 +581,6 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
-print(
-    '💡 Нажмите F для повторного сканирования'
-)
-print(
-    '📱 Discord webhooks готовы к отправке уведомлений'
-)
+print('💡 Нажмите F для повторного сканирования')
+print('📱 Discord webhooks готовы к отправке уведомлений')
 loadstring(game:HttpGet('https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua'))()
