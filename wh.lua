@@ -38,25 +38,21 @@ local OBJECTS = {
     ['Tralaledon'] = { emoji = '🦈', important = true },
     ['La Extinct Grande'] = {
         emoji = '🩻',
-        important = true,
         high_priority = true,
     },
     ['Tictac Sahur'] = { emoji = '🕰️', important = true },
     ['Los Primos'] = { emoji = '🙆‍♂️', important = true },
     ['Tang Tang Keletang'] = {
         emoji = '📢',
-        important = true,
         high_priority = true,
     },
     ['Money Money Puggy'] = {
         emoji = '🐶',
-        important = true,
         high_priority = true,
     },
     ['Burguro And Fryuro'] = { emoji = '🍔', important = true },
     ['Chillin Chili'] = {
         emoji = '🌶',
-        important = true,
         high_priority = true,
     },
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
