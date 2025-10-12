@@ -31,7 +31,6 @@ local OBJECTS = {
     ['Strawberry Elephant'] = { emoji = '🐘', important = true },
     ['Spaghetti Tualetti'] = {
         emoji = '🚽',
-        important = true,
         high_priority = true,
     },
     ['Ketchuru and Musturu'] = { emoji = '🍾', important = true },
