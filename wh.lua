@@ -24,7 +24,6 @@ local OBJECTS = {
     ['Nuclearo Dinossauro'] = { emoji = '🦕', important = true },
     ['Esok Sekolah'] = {
         emoji = '🏠',
-        important = true,
         high_priority = true,
     },
     ['La Supreme Combinasion'] = { emoji = '🔫', important = true },
@@ -62,10 +61,9 @@ local OBJECTS = {
     },
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
     ['Eviledon'] = { emoji = '😡', important = true },
-    ['Los Mobilis'] = { emoji = '🫘', important = true, high_priority = true },
+    ['Los Mobilis'] = { emoji = '🫘',  high_priority = true },
     ['La Spooky Grande'] = {
         emoji = '🎃',
-        important = true,
         high_priority = true,
     },
     ['Spooky and Pumpky'] = { emoji = '🦇', important = true },
