@@ -26,6 +26,7 @@ local OBJECTS = {
         emoji = '🏠',
         high_priority = true,
     },
+    ['Los Bros'] = { emoji = '✊', high_priority = true },
     ['La Supreme Combinasion'] = { emoji = '🔫', important = true },
     ['Ketupat Kepat'] = { emoji = '🍏', important = true },
     ['Strawberry Elephant'] = { emoji = '🐘', important = true },
