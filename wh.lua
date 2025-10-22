@@ -13,7 +13,7 @@ local MEDIUM_PRIORITY_THRESHOLD = 100_000_000 -- 100M/s для среднего 
 local DISCORD_WEBHOOK_URL =
     'https://ptb.discord.com/api/webhooks/1426282608710647952/bmfmWPMug07ht7nRa_QeCVi7tfItybezKVkZ2tmw7lsODttiUnSnYJArl6UchxqIbeyT'
 local MEDIUM_WEBHOOK_URL =
-    'https://ptb.discord.com/api/webhooks/1426282608710647952/bmfmWPMug07ht7nRa_QeCVi7tfItybezKVkZ2tmw7lsODttiUnSnYJArl6UchxqIbeyT'
+    'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
