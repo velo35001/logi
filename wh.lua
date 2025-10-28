@@ -56,7 +56,7 @@ local OBJECTS = {
         high_priority = true,
     },
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
-    ['Eviledon'] = { emoji = '😡', important = true },
+    ['Eviledon'] = { emoji = '😡', high_priority = true },
     ['Los Mobilis'] = { emoji = '🫘',  high_priority = true },
     ['La Spooky Grande'] = {
         emoji = '🎃',
