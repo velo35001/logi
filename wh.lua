@@ -67,6 +67,9 @@ local OBJECTS = {
     ['Chipso and Queso'] = { emoji = '🧀', high_priority = true },
     ['Headless Horseman'] = { emoji = '🔥', important = true },
     ['La Casa Boo'] = { emoji = '🍭', important = true },
+    ['Mariachi Corazoni'] = { emoji = '💀', important = true },
+    ['Los Tacoritas'] = { emoji = '🚴', important = true },
+    ['Tacorita Bicicleta'] = { emoji = '🚵‍♂️', important = true },
 }
 
 -- Создаем списки важных объектов
