@@ -67,7 +67,8 @@ local OBJECTS = {
     ['Chipso and Queso'] = { emoji = '🧀', high_priority = true },
     ['Headless Horseman'] = { emoji = '🔥', important = true },
     ['La Casa Boo'] = { emoji = '🍭', important = true },
-  
+    ['Mariachi Corazoni'] = { emoji = '💀', important = true },
+    ['Capitano Moby'] = { emoji = '🚢', important = true },
 
 }
 
