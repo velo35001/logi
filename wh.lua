@@ -522,17 +522,18 @@ local function scanAndNotify()
     local mediumWebhookObjects = {} -- Не-important объекты 100M/s-500M/s
 
     for _, obj in ipairs(allFound) do
-        if ALWAYS_IMPORTANT[obj.name] then
-            -- Все important объекты идут на основной вебхук
-            table.insert(discordWebhookObjects, obj)
-        else
-            -- Не-important объекты
+        if OBJECTS[obj.name] then
+            local config = OBJECTS[obj.name]
+            
             if obj.gen and obj.gen >= HIGH_PRIORITY_THRESHOLD then
-                -- ≥500M/s → на основной вебхук
                 table.insert(discordWebhookObjects, obj)
-            elseif obj.gen and obj.gen >= MEDIUM_PRIORITY_THRESHOLD then
-                -- 100M/s-500M/s → на MEDIUM вебхук
-                table.insert(mediumWebhookObjects, obj)
+            else
+                if config.important and not config.high_priority and obj.gen and obj.gen >= INCOME_THRESHOLD then
+                    table.insert(discordWebhookObjects, obj)
+                    table.insert(mediumWebhookObjects, obj)
+                elseif config.high_priority and obj.gen and obj.gen >= MEDIUM_PRIORITY_THRESHOLD then
+                    table.insert(mediumWebhookObjects, obj)
+                end
             end
         end
     end
@@ -545,13 +546,12 @@ local function scanAndNotify()
     -- 🔄 НОВАЯ ЛОГИКА: Если есть объекты для DISCORD_WEBHOOK_URL, то отправляем только их
     -- и НЕ отправляем на MEDIUM_WEBHOOK_URL
     if #discordWebhookObjects > 0 then
-        print('🚫 Обнаружены важные объекты - отправляю только на основной вебхук')
         sendDiscordNotification(discordWebhookObjects, DISCORD_WEBHOOK_URL)
-    elseif #mediumWebhookObjects > 0 then
-        -- Отправка на MEDIUM вебхук только если нет объектов для основного
-        print('📤 Нет важных объектов - отправляю на MEDIUM вебхук')
+    end
+    if #mediumWebhookObjects > 0 then
         sendDiscordNotification(mediumWebhookObjects, MEDIUM_WEBHOOK_URL)
-    else
+    end
+    if #discordWebhookObjects == 0 and #mediumWebhookObjects == 0 then
         print('🔍 Нет объектов для уведомления')
     end
 end
