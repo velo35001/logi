@@ -7,31 +7,27 @@ local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
-local INCOME_THRESHOLD = 500_000_000 -- 50M/s минимум для уведомления
+local INCOME_THRESHOLD = 100_000_000 -- 50M/s минимум для уведомления
 local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
 -- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ВАЖНОСТЬЮ
 local OBJECTS = {
-    ['La Vacca Saturno Saturnita'] = { emoji = '🐮', important = false },
-    ['Chimpanzini Spiderini'] = { emoji = '🕷', important = false },
-    ['Los Tralaleritos'] = { emoji = '🐟', important = false },
-    ['Las Tralaleritas'] = { emoji = '🌸', important = false },
-    ['Graipuss Medussi'] = { emoji = '🦑', important = false },
+    
     ['Torrtuginni Dragonfrutini'] = { emoji = '🐉', important = false },
-    ['Pot Hotspot'] = { emoji = '📱', important = false },
-    ['La Grande Combi1nasion'] = { emoji = '❗️', important = false },
+    ['Pot Hotsp213ot'] = { emoji = '📱', important = false },
+    ['La Grande C3123ombi1nasion'] = { emoji = '❗️', important = false },
     ['Garama and Madundung'] = { emoji = '🍝', important = true },
     ['Secret Lucksfsfsfy Block'] = { emoji = '⬛️', important = false },
     ['Dragon Cannelloni'] = { emoji = '🐲', important = true },
-    ['Nuclearo Dinossauro'] = { emoji = '🦕', important = true },
-    ['Las Vaquitas Saturnitas'] = { emoji = '👦', important = false },
-    ['Chicleteira Bicicl1eteira'] = { emoji = '🚲', important = false },
-    ['Los Combinasi1onas'] = { emoji = '⚒️', important = false },
+    ['Nuclearo Dinos332sauro'] = { emoji = '🦕', important = true },
+    ['Las Vaquitas Satu323rnitas'] = { emoji = '👦', important = false },
+    ['Chicleteira Bici323cl1eteira'] = { emoji = '🚲', important = false },
+    ['Los Combinasi1323onas'] = { emoji = '⚒️', important = false },
     ['Agarrini la 1Palini'] = { emoji = '🥄', important = false },
     ['Los Hotsp1otsitos'] = { emoji = '☎️', important = false },
-    ['Esok Sekolah'] = { emoji = '🏠', important = true },
+    ['Esok Se323kolah'] = { emoji = '🏠', important = true },
     ['Nooo My Hots1pot'] = { emoji = '👽', important = false },
     ['La Supreme Combinasion'] = { emoji = '🔫', important = true },
     ['Admin Luck1y Block'] = { emoji = '🆘', important = false },
@@ -60,11 +56,10 @@ local OBJECTS = {
     ['Spooky and Pumpky'] = { emoji = '🎃', important = true, },
     ['Mietet11eira Bicicleteira'] = { emoji = '☠️', important = true },
     ['Meowl'] = { emoji = '🐈', important = true },
-    ['Chipso and Queso'] = { emoji = '🧀', important = true },
-    ['Chipso And Queso'] = { emoji = '🧀', important = true },
+    ['Chipso and Queso'] = { emoji = '🧀', important = false },
     ['La Casa Boo'] = { emoji = '👁‍🗨', important = true },
     ['Headless Horseman'] = { emoji = '🐴', important = true },
-    ['Mariachi Corazoni'] = { emoji = '💀', important = true },
+    ['Mariachi Coraz32oni'] = { emoji = '💀', important = true },
     ['La Taco Combinasion'] = { emoji = '👒', important = true },
 }
 
