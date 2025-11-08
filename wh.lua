@@ -18,7 +18,7 @@ local OBJECTS = {
     ['Torrtuginni Dragonfrutini'] = { emoji = '🐉', important = false },
     ['Pot Hotsp213ot'] = { emoji = '📱', important = false },
     ['La Grande C3123ombi1nasion'] = { emoji = '❗️', important = false },
-    ['Garama and Madundung'] = { emoji = '🍝', important = true },
+    ['Garama and Madundung'] = { emoji = '🧂', important = true },
     ['Secret Lucksfsfsfy Block'] = { emoji = '⬛️', important = false },
     ['Dragon Cannelloni'] = { emoji = '🐲', important = true },
     ['Nuclearo Dinos332sauro'] = { emoji = '🦕', important = true },
@@ -63,6 +63,8 @@ local OBJECTS = {
     ['La Taco Combinasion'] = { emoji = '👒', important = true },
     ['Cooki and Milki'] = { emoji = '🍪', important = true },
     ['Los Puggies'] = { emoji = '🐕‍🦺', important = true },
+    ['Fragrama and Chocrama'] = { emoji = '🍫', important = true },
+    ['Los Spaghettis'] = { emoji = '🍝', important = true },
 }
 
 -- Создаем список важных объектов
