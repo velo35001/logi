@@ -445,6 +445,12 @@ local function sendDiscordNotification(filteredObjects)
         jobId
     )
 
+    -- Кнопка для копирования JobId
+    local copyButtonText = string.format(
+        "📋 Нажмите чтобы скопировать JobId: ```%s```",
+        jobId
+    )
+
     local payload = {
         username = '🎯 Brainrot Scanner',
         embeds = {
@@ -454,7 +460,7 @@ local function sendDiscordNotification(filteredObjects)
                 fields = {
                     {
                         name = '🆔 Сервер (Job ID)',
-                        value = string.format('``````', jobId),
+                        value = string.format('```%s```', jobId),
                         inline = false,
                     },
                     {
@@ -463,8 +469,13 @@ local function sendDiscordNotification(filteredObjects)
                         inline = false,
                     },
                     {
-                        name = '🚀 Телепорт:',
+                        name = '🚀 Телепорт команда:',
                         value = teleportText,
+                        inline = false,
+                    },
+                    {
+                        name = '📋 Скопировать JobId',
+                        value = copyButtonText,
                         inline = false,
                     },
                 },
