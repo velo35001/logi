@@ -1,152 +1,244 @@
--- НАСТРОЙКИ --
-local HOP_DELAY = 5  -- задержка перед первым переходом (5 секунд)
-local HOP_INTERVAL = 5  -- интервал между переходами (5 секунд)
-local USE_VPN_SIMULATION = true
-local ANTI_BAN_PROTECTION = true
-
--- ТЕХНИЧЕСКИЕ ПЕРЕМЕННЫЕ --
-local lastHopTime = 0
-local sessionId = tostring(math.random(1, 1000000))..tostring(tick())
-local isHopping = false
-local visitedServers = {}  -- Таблица для хранения посещённых серверов
+-- FIXED PERMANENT VISUAL SELF-INVISIBILITY SCRIPT
 local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
-local NetworkClient = game:GetService("NetworkClient")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
--- Функция безопасного телепорта
-local function safeTeleport()
-    local placeId = game.PlaceId  -- ID текущего места
-    local success = pcall(function()
-        TeleportService:Teleport(placeId)  -- основной метод
-    end)
+-- Переменные
+local isInvisible = true
+local originalProperties = {}
+
+-- Функция для скрытия персонажа (без отключения инструментов)
+local function hideCharacter()
+    local character = LocalPlayer.Character
+    if not character then return false end
     
-    -- Альтернативные методы
-    if not success then
-        wait(1)
-        pcall(function()
-            TeleportService:TeleportToPlaceInstance(placeId, tostring(math.random(1, 1000000)))  -- альтернативный метод
-        end)
+    -- Сохраняем оригинальные свойства
+    originalProperties = {}
+    
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            originalProperties[part] = {
+                Transparency = part.Transparency,
+                LocalTransparencyModifier = part.LocalTransparencyModifier
+            }
+            
+            -- Делаем часть полностью прозрачной
+            part.Transparency = 1
+            part.LocalTransparencyModifier = 1
+        elseif part:IsA("Decal") then
+            originalProperties[part] = {
+                Transparency = part.Transparency
+            }
+            part.Transparency = 1
+        elseif part:IsA("ParticleEmitter") then
+            originalProperties[part] = {Enabled = part.Enabled}
+            part.Enabled = false
+        elseif part:IsA("Beam") then
+            originalProperties[part] = {Enabled = part.Enabled}
+            part.Enabled = false
+        elseif part:IsA("Trail") then
+            originalProperties[part] = {Enabled = part.Enabled}
+            part.Enabled = false
+        end
     end
+    
+    -- НЕ отключаем инструменты в инвентаре - оставляем их функциональными
+    -- Только скрываем визуально, если они уже в руках персонажа
+    
+    -- Скрываем одежду и аксессуары
+    for _, accessory in pairs(character:GetChildren()) do
+        if accessory:IsA("Accessory") then
+            local handle = accessory:FindFirstChild("Handle")
+            if handle then
+                originalProperties[handle] = {
+                    Transparency = handle.Transparency,
+                    LocalTransparencyModifier = handle.LocalTransparencyModifier
+                }
+                handle.Transparency = 1
+                handle.LocalTransparencyModifier = 1
+            end
+        end
+    end
+    
+    return true
+end
 
-    -- Аварийное завершение
-    if not success and Players.LocalPlayer then
-        wait(2)
-        pcall(function() game:Shutdown() end)
+-- Функция для принудительного скрытия новых частей
+local function forceHideNewParts()
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    -- Постоянно проверяем и скрываем новые части, но не трогаем функциональность инструментов
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") and (part.Transparency < 1 or part.LocalTransparencyModifier < 1) then
+            -- Пропускаем инструменты, которые могут быть функциональными
+            local isToolPart = false
+            local parent = part.Parent
+            while parent do
+                if parent:IsA("Tool") then
+                    isToolPart = true
+                    break
+                end
+                parent = parent.Parent
+            end
+            
+            if not isToolPart then
+                part.Transparency = 1
+                part.LocalTransparencyModifier = 1
+            end
+        elseif part:IsA("ParticleEmitter") and part.Enabled then
+            part.Enabled = false
+        elseif part:IsA("Beam") and part.Enabled then
+            part.Enabled = false
+        elseif part:IsA("Trail") and part.Enabled then
+            part.Enabled = false
+        end
     end
 end
 
--- Функция перехода
-local function nuclearHop()
-    if isHopping then return end
-    isHopping = true
-
-    -- Защита от бана
-    if ANTI_BAN_PROTECTION and os.time() - lastHopTime < 5 then
-        warn("[ЗАЩИТА] Слишком частые переходы! Ждем...")
-        isHopping = false
-        return
+-- Основная функция активации невидимости
+local function activatePermanentInvisibility()
+    -- Сразу применяем к текущему персонажу
+    if LocalPlayer.Character then
+        hideCharacter()
     end
-    lastHopTime = os.time()
-
-    -- VPN-симуляция
-    if USE_VPN_SIMULATION then
-        pcall(function()
-            NetworkClient:SetOutgoingKBPSLimit(math.random(500, 2000))
-        end)
-    end
-
-    -- Отключение для безопасного телепорта
-    pcall(function()
-        Players.LocalPlayer:Kick("Автопереход...")
+    
+    -- Создаем постоянный цикл для поддержания невидимости
+    RunService.Heartbeat:Connect(function()
+        if LocalPlayer.Character then
+            forceHideNewParts()
+        end
     end)
-    wait(0.5)
-    safeTeleport()
+end
 
-    -- Двойная проверка
-    wait(3)
-    if Players.LocalPlayer then
-        pcall(function()
-            game:Shutdown()
+-- Обработчик смены персонажа
+LocalPlayer.CharacterAdded:Connect(function(character)
+    wait(0.5) -- Ждем полной загрузки персонажа
+    hideCharacter()
+end)
+
+-- Создаем простой индикатор статуса
+local function createStatusIndicator()
+    if LocalPlayer.PlayerGui:FindFirstChild("PermanentInvisibilityStatus") then
+        LocalPlayer.PlayerGui.PermanentInvisibilityStatus:Destroy()
+    end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "PermanentInvisibilityStatus"
+    screenGui.Parent = LocalPlayer.PlayerGui
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 250, 0, 40)
+    frame.Position = UDim2.new(0.02, 0, 0.02, 0)
+    frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    frame.BackgroundTransparency = 0.3
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Text = "ПОСТОЯННАЯ НЕВИДИМОСТЬ: АКТИВНА"
+    label.TextColor3 = Color3.new(0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextScaled = true
+    label.Parent = frame
+    
+    return screenGui
+end
+
+-- Инициализация при загрузке
+coroutine.wrap(function()
+    wait(2) -- Ждем полной загрузки игры
+    
+    -- Активируем постоянную невидимость
+    activatePermanentInvisibility()
+    
+    -- Создаем индикатор статуса
+    if LocalPlayer.PlayerGui then
+        createStatusIndicator()
+    else
+        LocalPlayer:WaitForChild("PlayerGui")
+        createStatusIndicator()
+    end
+    
+    -- Сообщение об успешной активации
+    game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+        Text = "ПОСТОЯННАЯ НЕВИДИМОСТЬ АКТИВИРОВАНА! Ваш персонаж теперь невидим для вас. Инструменты остаются функциональными.",
+        Color = Color3.new(0, 1, 0),
+        Font = Enum.Font.SourceSansBold,
+        FontSize = Enum.FontSize.Size18
+    })
+    
+    print("=== PERMANENT INVISIBILITY ACTIVATED ===")
+end)()
+
+-- Дополнительная защита: перехват новых объектов
+local function monitorNewObjects()
+    LocalPlayer.CharacterAdded:Connect(function(character)
+        -- Мониторим добавление новых объектов к персонажу
+        character.DescendantAdded:Connect(function(descendant)
+            wait(0.1) -- Небольшая задержка для стабильности
+            if isInvisible then
+                -- Проверяем, не является ли объект частью инструмента
+                local isToolPart = false
+                local parent = descendant.Parent
+                while parent do
+                    if parent:IsA("Tool") then
+                        isToolPart = true
+                        break
+                    end
+                    parent = parent.Parent
+                end
+                
+                if not isToolPart then
+                    if descendant:IsA("BasePart") then
+                        descendant.Transparency = 1
+                        descendant.LocalTransparencyModifier = 1
+                    elseif descendant:IsA("ParticleEmitter") then
+                        descendant.Enabled = false
+                    elseif descendant:IsA("Beam") then
+                        descendant.Enabled = false
+                    elseif descendant:IsA("Trail") then
+                        descendant.Enabled = false
+                    end
+                end
+            end
         end)
-    end
-
-    isHopping = false
+    end)
 end
 
--- Проверка сервера, чтобы не заходить на тот же сервер повторно
-local function isServerVisited(serverId)
-    return visitedServers[serverId] == true
-end
+-- Запускаем мониторинг новых объектов
+monitorNewObjects()
 
-local function addServerToVisited(serverId)
-    visitedServers[serverId] = true
-end
-
--- Интерфейс
-local gui = Instance.new("ScreenGui")
-gui.Name = "KlimHopGUI"
-gui.ResetOnSpawn = false
-gui.Parent = game:GetService("CoreGui")
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0.12, 0, 0.06, 0)
-frame.Position = UDim2.new(0.85, 0, 0.9, 0)
-frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-frame.BackgroundTransparency = 0.3
-frame.BorderSizePixel = 0
-frame.Parent = gui
-
-local uICorner = Instance.new("UICorner")
-uICorner.CornerRadius = UDim.new(0.3, 0)
-uICorner.Parent = frame
-
-local label = Instance.new("TextLabel")
-label.Size = UDim2.new(1, 0, 1, 0)
-label.Text = "turbo Клим"
-label.TextColor3 = Color3.fromRGB(255, 255, 255)
-label.BackgroundTransparency = 1
-label.Font = Enum.Font.GothamBold
-label.TextSize = 14
-label.Parent = frame
-
--- Автопереход
-local function startAutoHop()
-    -- Первый переход через 5 секунд
-    label.Text = "turbo Клим | запуск..."
-    wait(HOP_DELAY)
-
-    -- Основной цикл
-    while true do
-        label.Text = "turbo Клим | переход"
-        
-        -- Здесь добавим проверку, чтобы избегать повторных заходов на тот же сервер
-        local serverId = tostring(math.random(1, 1000000))  -- Генерация уникального id сервера (псевдокод)
-        
-        -- Пример проверки, если сервер был уже посещён
-        if not isServerVisited(serverId) then
-            addServerToVisited(serverId)
-            nuclearHop()
-        else
-            warn("Сервер уже посещён. Переходим к следующему.")
-        end
-        
-        wait(HOP_INTERVAL)
-    end
-end
-
--- Запуск
-spawn(startAutoHop)
-
--- Автовосстановление
-Players.LocalPlayer.OnTeleport:Connect(function(state)
-    if state == Enum.TeleportState.Started then
-        if gui then
-            gui:Destroy()
+-- Функция для экстренного восстановления видимости (на случай проблем)
+local function emergencyRestoreVisibility()
+    isInvisible = false
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    for part, properties in pairs(originalProperties) do
+        if part and part.Parent then
+            if part:IsA("BasePart") then
+                part.Transparency = properties.Transparency or 0
+                part.LocalTransparencyModifier = properties.LocalTransparencyModifier or 0
+            elseif part:IsA("Decal") then
+                part.Transparency = properties.Transparency or 0
+            elseif part:IsA("ParticleEmitter") or part:IsA("Beam") or part:IsA("Trail") then
+                part.Enabled = properties.Enabled
+            end
         end
     end
-end)
+    
+    originalProperties = {}
+    
+    game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+        Text = "ВИДИМОСТЬ ВОССТАНОВЛЕНА!",
+        Color = Color3.new(1, 0, 0),
+        Font = Enum.Font.SourceSansBold,
+        FontSize = Enum.FontSize.Size18
+    })
+end
 
--- Анти-краш
-game:GetService("ScriptContext").Error:Connect(function()
-    pcall(function() gui:Destroy() end)
-end)
+-- Добавляем команду для восстановления видимости в консоль (на крайний случай)
+print("=== EMERGENCY COMMAND ===")
+print("If something goes wrong, run: emergencyRestoreVisibility()")
