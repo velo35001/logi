@@ -137,7 +137,7 @@ local function createStatusIndicator()
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, 0, 1, 0)
-    label.Text = "ПОСТОЯННАЯ НЕВИДИМОСТЬ: АКТИВНА"
+    label.Text = "PERMANENT INVISIBILITY: ACTIVE"
     label.TextColor3 = Color3.new(0, 1, 0)
     label.BackgroundTransparency = 1
     label.TextScaled = true
