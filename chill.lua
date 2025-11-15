@@ -117,35 +117,6 @@ LocalPlayer.CharacterAdded:Connect(function(character)
     hideCharacter()
 end)
 
--- Создаем простой индикатор статуса
-local function createStatusIndicator()
-    if LocalPlayer.PlayerGui:FindFirstChild("PermanentInvisibilityStatus") then
-        LocalPlayer.PlayerGui.PermanentInvisibilityStatus:Destroy()
-    end
-    
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "PermanentInvisibilityStatus"
-    screenGui.Parent = LocalPlayer.PlayerGui
-    
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 250, 0, 40)
-    frame.Position = UDim2.new(0.02, 0, 0.02, 0)
-    frame.BackgroundColor3 = Color3.new(0, 0, 0)
-    frame.BackgroundTransparency = 0.3
-    frame.BorderSizePixel = 0
-    frame.Parent = screenGui
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.Text = "PERMANENT INVISIBILITY: ACTIVE"
-    label.TextColor3 = Color3.new(0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.TextScaled = true
-    label.Parent = frame
-    
-    return screenGui
-end
-
 -- Инициализация при загрузке
 coroutine.wrap(function()
     wait(2) -- Ждем полной загрузки игры
