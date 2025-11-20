@@ -46,7 +46,7 @@ local OBJECTS = {
     ['Tictac Sahur'] = { emoji = '🕰️', important = true },
     ['Celularcini Viciosini'] = { emoji = '📞', important = true },
     ['Los Primos'] = { emoji = '🙆‍♂️', important = true },
-    ['Tang Tang Keletang'] = { emoji = '📢', important = true },
+    ['Tang Tang Keletang'] = { emoji = '📢', important = false },
     ['Money Money Pu323ggy'] = { emoji = '🐶', important = true },
     ['Burguro And Fryuro'] = { emoji = '🍔', important = true },
     ['Chillin Chili'] = { emoji = '🌶', important = true },
