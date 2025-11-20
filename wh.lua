@@ -33,7 +33,7 @@ local OBJECTS = {
     ['Admin Luck1y Block'] = { emoji = '🆘', important = false },
     ['Ketupat Kepat'] = { emoji = '🍏', important = true },
     ['Strawberry Elephant'] = { emoji = '🐘', important = true },
-    ['Spaghetti Tualetti'] = { emoji = '🚽', important = true },
+    ['Spaghetti Tualetti'] = { emoji = '🚽', important = false },
     ['Ketchuru and Musturu'] = { emoji = '🍾', important = true },
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
     ['La Kark56656erkar Combinasion'] = { emoji = '🥊', important = false },
@@ -61,8 +61,6 @@ local OBJECTS = {
     ['Headless Horseman'] = { emoji = '🐴', important = true },
     ['Los Tacoritas'] = { emoji = '💀', important = true },
     ['La Taco Combinasion'] = { emoji = '👒', important = true },
-    ['Cooki and Milki'] = { emoji = '🍪', important = true },
-    ['Los Puggies'] = { emoji = '🐕‍🦺', important = true },
     ['Fragrama and Chocrama'] = { emoji = '🍫', important = true },
     ['Los Spaghettis'] = { emoji = '🍝', important = true },
 }
