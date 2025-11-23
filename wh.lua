@@ -66,6 +66,7 @@ local OBJECTS = {
     ['Los Spaghettis'] = { emoji = '🍝', important = true },
     ['Orcaledon'] = { emoji = '🐭', important = true },
     ['W or L'] = { emoji = '🏆', important = true },
+    ['Lavadorito Spinito'] = { emoji = '📺', important = true },
     
 }
 
