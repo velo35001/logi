@@ -39,7 +39,6 @@ local OBJECTS = {
     ['La Kark56656erkar Combinasion'] = { emoji = '🥊', important = false },
     ['Los B2323ros'] = { emoji = '📱', important = true },
     ['Tralaledon'] = { emoji = '🦈', important = true },
-    ['La Extinct Grande'] = { emoji = '🩻', important = true },
     ['Los Chicl1eteiras'] = { emoji = '🚳', important = true },
     ['Las S233is'] = { emoji = '👧', important = true },
     ['Tacorita Bicdsdicleta'] = { emoji = '📱', important = true },
