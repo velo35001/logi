@@ -1,737 +1,882 @@
 local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "VeloAutoJoiner"
+gui.Parent = player:WaitForChild("PlayerGui")
 
--- КОНФИГУРАЦИЯ DISCORD - ЗАПОЛНИТЕ ЭТИ ДАННЫЕ!
-local DISCORD_BOT_TOKEN = "MTQyMTQ5OTQ5OTYwNzc1MjkxNg.Gt-yig.50PNRnyefW-H2lv-h4xvRTj1lWOTaU1o0yWTuA" -- ⚠️ НЕ ПУБЛИКУЙТЕ ЭТОТ ТОКЕН!
-local DISCORD_CHANNEL_ID = "1421494081103597743"
-local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz"
-local DISCORD_API_URL = "https://discord.com/api/v10"
+-- Основной контейнер - точно по центру
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 350, 0, 400)
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(220, 235, 255)
+mainFrame.ClipsDescendants = true
+mainFrame.Visible = false
 
--- Конфигурация скрипта
-local TARGET_OBJECTS = {"Dragon Cannelloni", "Strawberry Elephant"}
-local GAME_ID = 109983668079237
-local MAX_RETRIES = 50
-local CHECK_DELAY = 2
+-- Закругление углов
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 15)
+corner.Parent = mainFrame
 
--- Переменные состояния
-local isTeleporting = false
-local currentServerId = ""
-local retryCount = 0
-local lastMessageId = "0"
-local scriptStartTime = os.time()
-local initialized = false
-local allProcessedMessages = {}
+-- Основной фон (синий)
+local background = Instance.new("Frame")
+background.Name = "Background"
+background.Size = UDim2.new(1, 0, 1, 0)
+background.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+background.BorderSizePixel = 0
+background.Parent = mainFrame
 
--- GUI элементы
-local notificationMenu
-local notifications = {}
-local MAX_NOTIFICATIONS = 15
+local bgCorner = Instance.new("UICorner")
+bgCorner.CornerRadius = UDim.new(0, 15)
+bgCorner.Parent = background
 
--- Улучшенная функция HTTP запросов
-function httpRequest(requestData)
-    local success, result = pcall(function()
-        if syn and syn.request then
-            local response = syn.request(requestData)
-            return true, response.Body or response.Body == "" and "{}" or nil
-        elseif request then
-            local response = request(requestData)
-            return true, response.Body or response.Body == "" and "{}" or nil
-        else
-            -- Fallback для обычного HttpService
-            if requestData.Method == "GET" then
-                return game:HttpGet(requestData.Url, true)
-            else
-                return game:HttpPost(requestData.Url, requestData.Body or "", true)
-            end
-        end
-    end)
-    
-    if success then
-        return true, result
-    else
-        return false, result
-    end
-end
+-- Контейнер для размытых кругов
+local circlesContainer = Instance.new("Frame")
+circlesContainer.Name = "CirclesContainer"
+circlesContainer.Size = UDim2.new(1, 0, 1, 0)
+circlesContainer.BackgroundTransparency = 1
+circlesContainer.Parent = background
 
--- Функция для получения сообщений из Discord
-function getMessages()
-    local url = DISCORD_API_URL .. "/channels/" .. DISCORD_CHANNEL_ID .. "/messages?limit=10"
-    local headers = {
-        ["Authorization"] = "Bot " .. DISCORD_BOT_TOKEN,
-        ["Content-Type"] = "application/json"
-    }
-    
-    print("🔍 Запрос к Discord API...")
-    
-    local success, response = httpRequest({
-        Url = url,
-        Method = "GET",
-        Headers = headers
-    })
-    
-    if success and response then
-        local data = HttpService:JSONDecode(response)
-        if type(data) == "table" then
-            print("✅ Получено сообщений из Discord: " .. #data)
+-- Очень размытые белые круги на фоне
+local circles = {}
+local function createCircles()
+    for i = 1, 6 do
+        local circleGroup = Instance.new("Frame")
+        circleGroup.Name = "CircleGroup" .. i
+        local size = math.random(120, 200)
+        circleGroup.Size = UDim2.new(0, size, 0, size)
+        circleGroup.Position = UDim2.new(math.random(), 0, math.random(), 0)
+        circleGroup.BackgroundTransparency = 1
+        circleGroup.BorderSizePixel = 0
+        circleGroup.AnchorPoint = Vector2.new(0.5, 0.5)
+        
+        -- Создаем несколько слоев для эффекта сильного размытия
+        for j = 1, 6 do
+            local blurCircle = Instance.new("Frame")
+            local blurSize = size * (0.7 + j * 0.05)
+            blurCircle.Size = UDim2.new(0, blurSize, 0, blurSize)
+            blurCircle.Position = UDim2.new(0.5, -blurSize/2, 0.5, -blurSize/2)
+            blurCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            blurCircle.BackgroundTransparency = 0.96 + j * 0.007
+            blurCircle.BorderSizePixel = 0
+            blurCircle.AnchorPoint = Vector2.new(0.5, 0.5)
             
-            -- Сортируем сообщения от новых к старым
-            table.sort(data, function(a, b)
-                return (tonumber(a.id) or 0) > (tonumber(b.id) or 0)
-            end)
+            local blurCorner = Instance.new("UICorner")
+            blurCorner.CornerRadius = UDim.new(1, 0)
+            blurCorner.Parent = blurCircle
             
-            return data
-        else
-            print("❌ Неверный формат ответа Discord")
-        end
-    else
-        print("❌ Ошибка HTTP запроса к Discord: " .. tostring(response))
-    end
-    return {}
-end
-
--- Функция для отправки сообщений через вебхук
-function sendDiscordMessage(text)
-    local data = {
-        content = text,
-        username = "Roblox Auto-Teleport Bot",
-        avatar_url = "https://i.imgur.com/3Jm7y2y.png"
-    }
-    
-    local success, response = httpRequest({
-        Url = DISCORD_WEBHOOK_URL,
-        Method = "POST",
-        Headers = {
-            ["Content-Type"] = "application/json"
-        },
-        Body = HttpService:JSONEncode(data)
-    })
-    
-    if success then
-        print("✅ Сообщение отправлено в Discord")
-        return true
-    else
-        print("❌ Ошибка отправки сообщения в Discord: " .. tostring(response))
-        return false
-    end
-end
-
--- Функция проверки доступа бота к Discord
-function checkBotAccess()
-    print("🔍 Проверка доступа бота к Discord...")
-    
-    local url = DISCORD_API_URL .. "/users/@me"
-    local headers = {
-        ["Authorization"] = "Bot " .. DISCORD_BOT_TOKEN
-    }
-    
-    local success, response = httpRequest({
-        Url = url,
-        Method = "GET",
-        Headers = headers
-    })
-    
-    if success and response then
-        local data = HttpService:JSONDecode(response)
-        if data.id then
-            print("✅ Бот: " .. data.username .. "#" .. (data.discriminator or "0"))
-            
-            -- Проверяем доступ к каналу
-            local channelUrl = DISCORD_API_URL .. "/channels/" .. DISCORD_CHANNEL_ID
-            local channelSuccess, channelResponse = httpRequest({
-                Url = channelUrl,
-                Method = "GET",
-                Headers = headers
-            })
-            
-            if channelSuccess and channelResponse then
-                local channelData = HttpService:JSONDecode(channelResponse)
-                if channelData.name then
-                    print("✅ Канал: " .. channelData.name)
-                    print("✅ Тип: " .. (channelData.type == 0 and "Текстовый" or "Голосовой"))
-                    return true
-                end
-            else
-                print("❌ Нет доступа к каналу. Убедитесь, что:")
-                print("   - Бот добавлен на сервер")
-                print("   - Бот имеет права на чтение сообщений")
-                print("   - ID канала указан правильно")
-            end
-        end
-    else
-        print("❌ Ошибка доступа к Discord API")
-        print("   - Проверьте токен бота")
-        print("   - Проверьте интернет соединение")
-    end
-    return false
-end
-
--- Функция инициализации бота
-function initializeBot()
-    print("🔍 Инициализация Discord бота...")
-    
-    if not checkBotAccess() then
-        print("❌ Проблемы с доступом бота. Скрипт может не работать корректно.")
-        return false
-    end
-    
-    -- Получаем последние сообщения для инициализации
-    local messages = getMessages()
-    if #messages > 0 then
-        lastMessageId = tostring(messages[1].id) or "0"
-        print("✅ Последний ID сообщения: " .. lastMessageId)
-    end
-    
-    initialized = true
-    print("✅ Discord бот инициализирован!")
-    
-    -- Отправляем тестовое сообщение
-    sendDiscordMessage("🤖 Скрипт активирован! Ожидаю сообщения с серверами...")
-    return true
-end
-
--- Функция проверки целевых объектов
-function hasTargetObjects(messageText)
-    if not messageText then return false end
-    
-    local textLower = string.lower(messageText)
-    
-    for _, target in ipairs(TARGET_OBJECTS) do
-        local targetLower = string.lower(target)
-        if string.find(textLower, targetLower, 1, true) then
-            print("🎯 Найден целевой объект: " .. target)
-            return true
-        end
-    end
-    return false
-end
-
--- Функция извлечения serverId
-function extractServerId(messageText)
-    if not messageText then return nil end
-    
-    -- Паттерн для UUID (стандартный формат Roblox)
-    local pattern = "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x"
-    local found = string.match(messageText, pattern)
-    
-    if found and #found == 36 then
-        print("🔗 Найден Server ID: " .. found)
-        return found
-    end
-    
-    -- Альтернативный паттерн (без дефисов)
-    local pattern2 = "%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x%x"
-    local found2 = string.match(messageText, pattern2)
-    
-    if found2 and #found2 == 32 then
-        -- Форматируем в стандартный UUID
-        local formatted = string.sub(found2, 1, 8) .. "-" .. string.sub(found2, 9, 12) .. "-" .. 
-                         string.sub(found2, 13, 16) .. "-" .. string.sub(found2, 17, 20) .. "-" .. 
-                         string.sub(found2, 21, 32)
-        print("🔗 Найден Server ID (форматированный): " .. formatted)
-        return formatted
-    end
-    
-    -- Поиск serverId в различных форматах
-    local patterns = {
-        "Server:?%s*([%x%-]+)",
-        "ID:?%s*([%x%-]+)",
-        "Сервер:?%s*([%x%-]+)",
-        "Instance:?%s*([%x%-]+)"
-    }
-    
-    for _, pat in ipairs(patterns) do
-        local found3 = string.match(messageText, pat)
-        if found3 and (#found3 == 36 or #found3 == 32) then
-            print("🔗 Найден Server ID (по шаблону): " .. found3)
-            return found3
-        end
-    end
-    
-    return nil
-end
-
-function extractObjectsPart(messageText)
-    if not messageText then return "Нет информации об объектах" end
-    
-    local objectsStart = string.find(messageText, "🚨 ВАЖНЫЕ ОБЪЕКТЫ:")
-    if not objectsStart then
-        objectsStart = string.find(messageText, "ВАЖНЫЕ ОБЪЕКТЫ:")
-        if not objectsStart then
-            return string.sub(messageText:gsub("\n", " "), 1, 80) .. "..."
-        end
-    end
-    
-    local objectsEnd = string.find(messageText, "🚀 Телепорт:", objectsStart)
-    if not objectsEnd then
-        objectsEnd = string.find(messageText, "Телепорт:", objectsStart)
-    end
-    if not objectsEnd then
-        objectsEnd = #messageText
-    end
-    
-    local objectsText = string.sub(messageText, objectsStart, objectsEnd - 1)
-    objectsText = objectsText:gsub("^%s*\n*", ""):gsub("\n*%s*$", "")
-    
-    return objectsText
-end
-
--- Основная функция телепортации
-function teleportToServer(serverId)
-    if isTeleporting then 
-        print("⚠️ Телепортация уже выполняется")
-        return 
-    end
-    
-    retryCount = retryCount + 1
-    if retryCount > MAX_RETRIES then
-        print("🚫 Превышено максимальное количество попыток")
-        resetState()
-        return
-    end
-    
-    isTeleporting = true
-    currentServerId = serverId
-    
-    print("🔄 Попытка телепортации #" .. retryCount .. " на сервер: " .. serverId)
-    
-    local success, errorMsg = pcall(function()
-        TeleportService:TeleportToPlaceInstance(GAME_ID, serverId)
-    end)
-    
-    if not success then
-        handleTeleportError(errorMsg)
-    else
-        print("✅ Запрос телепортации отправлен")
-    end
-end
-
--- Обработка ошибок телепортации
-function handleTeleportError(errorMsg)
-    isTeleporting = false
-    local errorText = tostring(errorMsg):lower()
-    
-    print("❌ Ошибка телепортации: " .. errorText)
-    
-    if string.find(errorText, "full") or string.find(errorText, "переполнен") or string.find(errorText, "capacity") then
-        print("⚡ Сервер переполнен! Мгновенный повтор...")
-        wait(0.1)
-        teleportToServer(currentServerId)
-    else
-        print("⏳ Повтор через 2 секунды...")
-        wait(2)
-        teleportToServer(currentServerId)
-    end
-end
-
--- Сброс состояния
-function resetState()
-    isTeleporting = false
-    retryCount = 0
-    currentServerId = ""
-end
-
--- Функция создания меню уведомлений
-function createNotificationMenu()
-    local success, errorMsg = pcall(function()
-        -- Создаем основной GUI
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "DiscordNotifications"
-        screenGui.Parent = game:GetService("CoreGui")
-        screenGui.ResetOnSpawn = false
-        screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        
-        -- Основной фрейм меню
-        local notificationMenu = Instance.new("Frame")
-        notificationMenu.Name = "NotificationMenu"
-        notificationMenu.Size = UDim2.new(0, 400, 0, 500)
-        notificationMenu.Position = UDim2.new(0, 10, 0.5, -250)
-        notificationMenu.AnchorPoint = Vector2.new(0, 0.5)
-        notificationMenu.BackgroundColor3 = Color3.fromRGB(16, 14, 24)
-        notificationMenu.BackgroundTransparency = 0.1
-        notificationMenu.BorderSizePixel = 0
-        notificationMenu.Parent = screenGui
-        
-        -- Закругленные углы
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 12)
-        corner.Parent = notificationMenu
-        
-        -- Обводка
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(95, 70, 160)
-        stroke.Thickness = 2
-        stroke.Parent = notificationMenu
-        
-        -- Заголовок
-        local header = Instance.new("TextLabel")
-        header.Name = "Header"
-        header.Text = "📱 Уведомления Discord"
-        header.Font = Enum.Font.GothamBold
-        header.TextSize = 16
-        header.TextColor3 = Color3.fromRGB(235, 225, 255)
-        header.BackgroundTransparency = 1
-        header.Size = UDim2.new(1, -40, 0, 40)
-        header.Position = UDim2.new(0, 10, 0, 0)
-        header.TextXAlignment = Enum.TextXAlignment.Left
-        header.Parent = notificationMenu
-        
-        -- Кнопка сворачивания
-        local toggleButton = Instance.new("TextButton")
-        toggleButton.Name = "ToggleButton"
-        toggleButton.Text = "−"
-        toggleButton.Font = Enum.Font.GothamBlack
-        toggleButton.TextSize = 18
-        toggleButton.Size = UDim2.new(0, 30, 0, 30)
-        toggleButton.Position = UDim2.new(1, -35, 0, 5)
-        toggleButton.BackgroundColor3 = Color3.fromRGB(148, 0, 211)
-        toggleButton.TextColor3 = Color3.new(1, 1, 1)
-        toggleButton.AutoButtonColor = true
-        toggleButton.Parent = notificationMenu
-        
-        local toggleCorner = Instance.new("UICorner")
-        toggleCorner.CornerRadius = UDim.new(0, 6)
-        toggleCorner.Parent = toggleButton
-        
-        -- Прокручиваемая область для уведомлений
-        local scrollFrame = Instance.new("ScrollingFrame")
-        scrollFrame.Name = "NotificationsScroll"
-        scrollFrame.Size = UDim2.new(1, -10, 1, -50)
-        scrollFrame.Position = UDim2.new(0, 5, 0, 45)
-        scrollFrame.BackgroundTransparency = 1
-        scrollFrame.ScrollBarThickness = 6
-        scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(95, 70, 160)
-        scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-        scrollFrame.Parent = notificationMenu
-        
-        -- Layout для уведомлений
-        local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 8)
-        layout.Parent = scrollFrame
-        
-        -- Автоматическое обновление размера canvas
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            scrollFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
-        end)
-        
-        -- Функционал сворачивания/разворачивания
-        local isMenuVisible = true
-        
-        toggleButton.MouseButton1Click:Connect(function()
-            isMenuVisible = not isMenuVisible
-            if isMenuVisible then
-                notificationMenu.Size = UDim2.new(0, 400, 0, 500)
-                toggleButton.Text = "−"
-                scrollFrame.Visible = true
-            else
-                notificationMenu.Size = UDim2.new(0, 400, 0, 40)
-                toggleButton.Text = "+"
-                scrollFrame.Visible = false
-            end
-        end)
-        
-        return scrollFrame
-    end)
-    
-    if not success then
-        warn("❌ Ошибка при создании меню: " .. tostring(errorMsg))
-        return nil
-    end
-end
-
--- Функция добавления уведомления в меню
-function addNotificationToMenu(messageText, serverId, isTarget, messageId, isFromBot)
-    if not notificationMenu then 
-        print("❌ Меню уведомлений не создано")
-        return 
-    end
-    
-    -- Проверяем, не обрабатывали ли уже это сообщение
-    if allProcessedMessages[messageId] then
-        return
-    end
-    allProcessedMessages[messageId] = true
-    
-    -- Очищаем старые уведомления если превышен лимит
-    while #notifications >= MAX_NOTIFICATIONS do
-        local oldestNotification = table.remove(notifications, 1)
-        if oldestNotification and oldestNotification.frame then
-            oldestNotification.frame:Destroy()
-        end
-    end
-    
-    -- Извлекаем только часть с объектами
-    local objectsText = extractObjectsPart(messageText)
-    
-    local success, errorMsg = pcall(function()
-        -- Создаем фрейм для уведомления
-        local notificationFrame = Instance.new("Frame")
-        notificationFrame.Size = UDim2.new(1, 0, 0, 80)
-        notificationFrame.BackgroundColor3 = isTarget and Color3.fromRGB(40, 160, 120) or Color3.fromRGB(60, 60, 80)
-        notificationFrame.BackgroundTransparency = 0.1
-        notificationFrame.Parent = notificationMenu
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 8)
-        corner.Parent = notificationFrame
-        
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = isTarget and Color3.fromRGB(100, 200, 100) or Color3.fromRGB(95, 70, 160)
-        stroke.Thickness = 1.5
-        stroke.Parent = notificationFrame
-        
-        -- Индикатор отправителя
-        local senderIndicator = Instance.new("TextLabel")
-        senderIndicator.Text = isFromBot and "🤖 БОТ" or "👤 ВЫ"
-        senderIndicator.Font = Enum.Font.GothamBold
-        senderIndicator.TextSize = 10
-        senderIndicator.TextColor3 = isFromBot and Color3.fromRGB(100, 200, 255) or Color3.fromRGB(255, 200, 100)
-        senderIndicator.BackgroundTransparency = 1
-        senderIndicator.Size = UDim2.new(0, 50, 0, 15)
-        senderIndicator.Position = UDim2.new(1, -55, 0, 2)
-        senderIndicator.TextXAlignment = Enum.TextXAlignment.Right
-        senderIndicator.Parent = notificationFrame
-        
-        -- Текст уведомления
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Text = objectsText
-        textLabel.Font = Enum.Font.Gotham
-        textLabel.TextSize = 12
-        textLabel.TextColor3 = Color3.fromRGB(235, 225, 255)
-        textLabel.BackgroundTransparency = 1
-        textLabel.Size = UDim2.new(1, -70, 1, -30)
-        textLabel.Position = UDim2.new(0, 8, 0, 5)
-        textLabel.TextXAlignment = Enum.TextXAlignment.Left
-        textLabel.TextYAlignment = Enum.TextYAlignment.Top
-        textLabel.TextWrapped = true
-        textLabel.TextScaled = false
-        textLabel.Parent = notificationFrame
-        
-        -- Время и ID
-        local infoLabel = Instance.new("TextLabel")
-        infoLabel.Text = "ID: " .. messageId .. " | " .. os.date("%H:%M:%S")
-        infoLabel.Font = Enum.Font.Gotham
-        infoLabel.TextSize = 10
-        infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        infoLabel.BackgroundTransparency = 1
-        infoLabel.Size = UDim2.new(1, -70, 0, 15)
-        infoLabel.Position = UDim2.new(0, 8, 1, -18)
-        infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-        infoLabel.Parent = notificationFrame
-        
-        -- Кнопка телепорта (только если есть serverId)
-        if serverId and #serverId >= 32 then
-            local teleportButton = Instance.new("TextButton")
-            teleportButton.Text = "🚀"
-            teleportButton.Font = Enum.Font.GothamBold
-            teleportButton.TextSize = 16
-            teleportButton.Size = UDim2.new(0, 50, 0, 25)
-            teleportButton.Position = UDim2.new(1, -55, 0.5, -12)
-            teleportButton.AnchorPoint = Vector2.new(1, 0.5)
-            teleportButton.BackgroundColor3 = Color3.fromRGB(148, 0, 211)
-            teleportButton.TextColor3 = Color3.new(1, 1, 1)
-            teleportButton.AutoButtonColor = true
-            teleportButton.Parent = notificationFrame
-            
-            local buttonCorner = Instance.new("UICorner")
-            buttonCorner.CornerRadius = UDim.new(0, 6)
-            buttonCorner.Parent = teleportButton
-            
-            -- Обработчик кнопки телепорта
-            teleportButton.MouseButton1Click:Connect(function()
-                print("🚀 Ручной телепорт на сервер: " .. serverId)
-                teleportToServer(serverId)
-            end)
+            blurCircle.Parent = circleGroup
         end
         
-        local notification = {
-            frame = notificationFrame,
-            text = messageText,
-            serverId = serverId,
-            messageId = messageId,
-            timestamp = os.time(),
-            isTarget = isTarget,
-            isFromBot = isFromBot
-        }
-        
-        table.insert(notifications, notification)
-        
-        print("✅ Добавлено уведомление в меню. Отправитель: " .. (isFromBot and "Бот" or "Вы"))
-        
-        return notification
-    end)
-    
-    if not success then
-        warn("❌ Ошибка при добавлении уведомления: " .. tostring(errorMsg))
+        circleGroup.Parent = circlesContainer
+        table.insert(circles, circleGroup)
     end
 end
 
--- Улучшенная функция проверки новых сообщений с автоматическим заходом
-function checkForNewMessages()
-    if isTeleporting or not initialized then 
-        return false 
-    end
-    
-    local messages = getMessages()
-    local foundTarget = false
-    
-    for _, message in ipairs(messages) do
-        local messageId = tostring(message.id)
-        local messageText = message.content
-        
-        -- Пропускаем сообщения без текста
-        if not messageText then
-            print("❌ Сообщение без текста, пропускаем")
-            continue
-        end
-        
-        -- Пропускаем уже обработанные сообщения
-        if allProcessedMessages[messageId] then
-            continue
-        end
-        
-        allProcessedMessages[messageId] = true
-        
-        local serverId = extractServerId(messageText)
-        local isFromBot = message.author and message.author.bot
-        local senderName = "Unknown"
-        
-        if message.author then
-            senderName = message.author.username or "Unknown"
-        end
-        
-        print("📩 Новое сообщение от " .. senderName .. 
-              " (Бот: " .. tostring(isFromBot) .. ")" ..
-              " ID: " .. messageId)
-        
-        -- Если нашли serverId, добавляем в меню
-        if serverId then
-            local isTarget = hasTargetObjects(messageText)
-            
-            -- Добавляем в меню ВСЕ сообщения с serverId
-            addNotificationToMenu(messageText, serverId, isTarget, messageId, isFromBot)
-            
-            -- АВТОМАТИЧЕСКИЙ ЗАХОД: телепортируемся если есть целевые объекты
-            if isTarget and not foundTarget then
-                print("🎯 АВТОМАТИЧЕСКИЙ ЗАХОД! Найден целевой объект!")
-                print("🚀 Авто-телепорт на сервер: " .. serverId)
-                teleportToServer(serverId)
-                foundTarget = true
-                
-                -- Отправляем подтверждение в Discord
-                sendDiscordMessage("✅ Авто-заход на сервер с " .. 
-                    table.concat(TARGET_OBJECTS, "/") .. 
-                    " | Server: " .. serverId)
-            end
-        else
-            print("❌ Server ID не найден в сообщении")
-        end
-    end
-    
-    return foundTarget
-end
-
--- Обработчик успешного подключения к серверу
-player.CharacterAdded:Connect(function()
-    print("🎉 Успешно подключились к серверу!")
-    resetState()
-end)
-
--- Основной цикл проверки сообщений
-function startMonitoring()
-    print("🔍 Инициализация скрипта Discord...")
-    
-    -- Создаем меню уведомлений
-    print("🔄 Создание меню уведомлений...")
-    notificationMenu = createNotificationMenu()
-    
-    if notificationMenu then
-        print("✅ Меню уведомлений успешно создано!")
-    else
-        print("❌ Не удалось создать меню уведомлений")
-    end
-    
-    -- Инициализируем бота
-    if not initializeBot() then
-        print("❌ Не удалось инициализировать Discord бота")
-        print("⚠️ Проверьте токен бота и ID канала")
-        return
-    end
-    
-    print("✅ Скрипт готов! Ожидаю сообщения из Discord...")
-    print("🎯 Авто-заход активирован для: " .. table.concat(TARGET_OBJECTS, ", "))
-    
-    -- Основной цикл мониторинга
+-- Анимация движения кругов (медленная и плавная)
+local function animateCircles()
     while true do
-        if not isTeleporting then
-            local found = checkForNewMessages()
-            if found then
-                print("⏳ Ожидаю завершения телепортации...")
-            end
+        for _, circle in pairs(circles) do
+            local newX = math.random()
+            local newY = math.random()
+            local tweenInfo = TweenInfo.new(
+                math.random(20, 30),
+                Enum.EasingStyle.Quad,
+                Enum.EasingDirection.InOut
+            )
+            local tween = TweenService:Create(circle, tweenInfo, {
+                Position = UDim2.new(newX, 0, newY, 0)
+            })
+            tween:Play()
         end
-        wait(CHECK_DELAY)
+        wait(25)
     end
 end
 
--- Запуск мониторинга
-print("========================================")
-print("🤖 DISCORD АВТО-ТЕЛЕПОРТ PRO")
-print("👤 Channel ID: " .. DISCORD_CHANNEL_ID)
-print("🎯 Авто-цели: " .. table.concat(TARGET_OBJECTS, ", "))
-print("🚀 АВТОМАТИЧЕСКИЙ ЗАХОД АКТИВИРОВАН")
-print("📱 Меню уведомлений включено")
-print("========================================")
+-- Обводка с плавным переливанием
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(80, 160, 255)
+stroke.Thickness = 3
+stroke.Transparency = 0
+stroke.Parent = mainFrame
 
--- Запускаем мониторинг
-spawn(startMonitoring)
-
--- Функции для ручного управления
-function manualTeleport(serverId)
-    if serverId and (#serverId == 36 or #serverId == 32) then
-        resetState()
-        teleportToServer(serverId)
-    else
-        print("❌ Неверный serverId! Должен быть 32 или 36 символов")
-    end
-end
-
-function clearNotifications()
-    if notificationMenu then
-        for _, child in ipairs(notificationMenu:GetChildren()) do
-            if child:IsA("Frame") then
-                child:Destroy()
-            end
+-- Анимация обводки
+spawn(function()
+    local brightness = 0.8
+    local direction = 0.008
+    while true do
+        brightness = brightness + direction
+        if brightness >= 1 then
+            brightness = 1
+            direction = -0.008
+        elseif brightness <= 0.6 then
+            brightness = 0.6
+            direction = 0.008
         end
-    end
-    notifications = {}
-    allProcessedMessages = {}
-    print("🗑 Все уведомления очищены")
-end
-
-function showNotificationCount()
-    print("📊 Количество уведомлений в меню: " .. #notifications)
-    print("📋 Всего обработано сообщений: " .. #allProcessedMessages)
-end
-
--- Обработчик клавиши M для информации
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.M then
-        print("📱 Информация о меню:")
-        print("   - Используйте кнопку −/+ для сворачивания")
-        print("   - Уведомлений: " .. #notifications)
-        print("   - Обработано сообщений: " .. #allProcessedMessages)
-        print("   - Текущий статус: " .. (isTeleporting and "Телепортация" : "Ожидание"))
+        stroke.Color = Color3.fromRGB(
+            math.floor(80 * brightness),
+            math.floor(160 * brightness),
+            math.floor(255 * brightness)
+        )
+        wait(0.05)
     end
 end)
 
--- Автоматическая отправка статуса при запуске
-wait(5)
-sendDiscordMessage("🟢 Скрипт активирован и готов к работе! | " .. os.date("%H:%M:%S"))
+-- Заголовок
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(0.8, 0, 0, 30)
+title.Position = UDim2.new(0.1, 0, 0.05, 0)
+title.BackgroundTransparency = 1
+title.Text = "VELO AUTOJOINER PREMIUM"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextTransparency = 0.5
+title.Font = Enum.Font.Gotham
+title.TextSize = 12
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = mainFrame
+
+-- Контейнер для буквы V (новая позиция)
+local vContainer = Instance.new("Frame")
+vContainer.Name = "VContainer"
+vContainer.Size = UDim2.new(0, 220, 0, 200)
+vContainer.Position = UDim2.new(0.5, -110, 0.25, -80)
+vContainer.BackgroundTransparency = 1
+vContainer.Parent = mainFrame
+
+-- Очень большая красивая буква V
+local vLetter = Instance.new("TextLabel")
+vLetter.Name = "VLetter"
+vLetter.Size = UDim2.new(1, 0, 1, 0)
+vLetter.BackgroundTransparency = 1
+vLetter.Text = "V"
+vLetter.TextColor3 = Color3.fromRGB(255, 255, 255)
+vLetter.Font = Enum.Font.FredokaOne
+vLetter.TextSize = 190
+vLetter.TextTransparency = 1
+vLetter.Parent = vContainer
+
+-- Поле для ввода ключа
+local keyBoxContainer = Instance.new("Frame")
+keyBoxContainer.Name = "KeyBoxContainer"
+keyBoxContainer.Size = UDim2.new(0.8, 0, 0, 50)
+keyBoxContainer.Position = UDim2.new(0.1, 0, 0.6, 0)
+keyBoxContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+keyBoxContainer.Parent = mainFrame
+
+local keyBoxCorner = Instance.new("UICorner")
+keyBoxCorner.CornerRadius = UDim.new(0, 10)
+keyBoxCorner.Parent = keyBoxContainer
+
+local keyBoxStroke = Instance.new("UIStroke")
+keyBoxStroke.Color = Color3.fromRGB(100, 180, 255)
+keyBoxStroke.Thickness = 2
+keyBoxStroke.Parent = keyBoxContainer
+
+local keyBox = Instance.new("TextBox")
+keyBox.Name = "KeyBox"
+keyBox.Size = UDim2.new(0.9, 0, 0.8, 0)
+keyBox.Position = UDim2.new(0.05, 0, 0.1, 0)
+keyBox.BackgroundTransparency = 1
+keyBox.PlaceholderText = "Enter your key..."
+keyBox.Text = ""
+keyBox.TextColor3 = Color3.fromRGB(50, 50, 50)
+keyBox.Font = Enum.Font.GothamSemibold
+keyBox.TextSize = 16
+keyBox.ClearTextOnFocus = false
+keyBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+keyBox.TextXAlignment = Enum.TextXAlignment.Left
+keyBox.Parent = keyBoxContainer
+
+-- Иконка ключа
+local keyIcon = Instance.new("TextLabel")
+keyIcon.Name = "KeyIcon"
+keyIcon.Size = UDim2.new(0, 20, 0, 20)
+keyIcon.Position = UDim2.new(0.9, -10, 0.5, -10)
+keyIcon.BackgroundTransparency = 1
+keyIcon.Text = "🔑"
+keyIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
+keyIcon.Font = Enum.Font.Gotham
+keyIcon.TextSize = 14
+keyIcon.Parent = keyBoxContainer
+
+-- Кнопка Activate с тенью
+local activateShadow = Instance.new("Frame")
+activateShadow.Name = "ActivateShadow"
+activateShadow.Size = UDim2.new(0.8, 0, 0, 45)
+activateShadow.Position = UDim2.new(0.1, 4, 0.74, 4)
+activateShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+activateShadow.BackgroundTransparency = 0.8
+activateShadow.ZIndex = 1
+
+local activateShadowCorner = Instance.new("UICorner")
+activateShadowCorner.CornerRadius = UDim.new(0, 10)
+activateShadowCorner.Parent = activateShadow
+
+local activateBtn = Instance.new("TextButton")
+activateBtn.Name = "ActivateBtn"
+activateBtn.Size = UDim2.new(0.8, 0, 0, 45)
+activateBtn.Position = UDim2.new(0.1, 0, 0.74, 0)
+activateBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+activateBtn.Text = "ACTIVATE"
+activateBtn.TextColor3 = Color3.fromRGB(80, 160, 255)
+activateBtn.Font = Enum.Font.GothamBold
+activateBtn.TextSize = 16
+activateBtn.AutoButtonColor = false
+activateBtn.ZIndex = 2
+
+local activateCorner = Instance.new("UICorner")
+activateCorner.CornerRadius = UDim.new(0, 10)
+activateCorner.Parent = activateBtn
+
+local activateStroke = Instance.new("UIStroke")
+activateStroke.Color = Color3.fromRGB(255, 255, 255)
+activateStroke.Thickness = 2
+activateStroke.Parent = activateBtn
+
+-- Glow эффект для кнопки Activate
+local activateGlow = Instance.new("ImageLabel")
+activateGlow.Name = "ActivateGlow"
+activateGlow.Size = UDim2.new(1, 10, 1, 10)
+activateGlow.Position = UDim2.new(0, -5, 0, -5)
+activateGlow.BackgroundTransparency = 1
+activateGlow.Image = "rbxassetid://8992231221"
+activateGlow.ImageColor3 = Color3.fromRGB(255, 255, 255)
+activateGlow.ScaleType = Enum.ScaleType.Slice
+activateGlow.SliceCenter = Rect.new(100, 100, 100, 100)
+activateGlow.ImageTransparency = 0.8
+activateGlow.ZIndex = 3
+activateGlow.Parent = activateBtn
+
+-- Кнопка Copy Link с тенью
+local copyShadow = Instance.new("Frame")
+copyShadow.Name = "CopyShadow"
+copyShadow.Size = UDim2.new(0.8, 0, 0, 40)
+copyShadow.Position = UDim2.new(0.1, 3, 0.87, 3)
+copyShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+copyShadow.BackgroundTransparency = 0.8
+copyShadow.ZIndex = 1
+
+local copyShadowCorner = Instance.new("UICorner")
+copyShadowCorner.CornerRadius = UDim.new(0, 8)
+copyShadowCorner.Parent = copyShadow
+
+local copyBtn = Instance.new("TextButton")
+copyBtn.Name = "CopyBtn"
+copyBtn.Size = UDim2.new(0.8, 0, 0, 40)
+copyBtn.Position = UDim2.new(0.1, 0, 0.87, 0)
+copyBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+copyBtn.BackgroundTransparency = 0.1
+copyBtn.Text = "COPY LINK"
+copyBtn.TextColor3 = Color3.fromRGB(80, 160, 255)
+copyBtn.Font = Enum.Font.Gotham
+copyBtn.TextSize = 14
+copyBtn.AutoButtonColor = false
+copyBtn.ZIndex = 2
+
+local copyCorner = Instance.new("UICorner")
+copyCorner.CornerRadius = UDim.new(0, 8)
+copyCorner.Parent = copyBtn
+
+-- Кнопка закрытия с крутой анимацией
+local closeBtn = Instance.new("TextButton")
+closeBtn.Name = "CloseBtn"
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(0.88, 0, 0.02, 0)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "×"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 24
+closeBtn.Parent = mainFrame
+
+-- Функция для создания уведомления
+local function createNotification(message, isSuccess)
+    local notificationGui = Instance.new("ScreenGui")
+    notificationGui.Name = "NotificationGui"
+    notificationGui.Parent = player:WaitForChild("PlayerGui")
+    
+    -- Основной контейнер уведомления
+    local notificationFrame = Instance.new("TextButton")
+    notificationFrame.Name = "NotificationFrame"
+    notificationFrame.Size = UDim2.new(0, 300, 0, 70)
+    notificationFrame.Position = UDim2.new(0.5, 0, 0, -70) -- Начинаем выше экрана, центрировано по горизонтали
+    notificationFrame.AnchorPoint = Vector2.new(0.5, 0)
+    notificationFrame.BackgroundColor3 = Color3.fromRGB(220, 235, 255)
+    notificationFrame.ClipsDescendants = true
+    notificationFrame.Text = ""
+    notificationFrame.AutoButtonColor = false
+    
+    -- Закругление углов
+    local notificationCorner = Instance.new("UICorner")
+    notificationCorner.CornerRadius = UDim.new(0, 12)
+    notificationCorner.Parent = notificationFrame
+    
+    -- Основной фон (синий)
+    local notificationBackground = Instance.new("Frame")
+    notificationBackground.Name = "Background"
+    notificationBackground.Size = UDim2.new(1, 0, 1, 0)
+    notificationBackground.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+    notificationBackground.BorderSizePixel = 0
+    notificationBackground.Parent = notificationFrame
+    
+    local notificationBgCorner = Instance.new("UICorner")
+    notificationBgCorner.CornerRadius = UDim.new(0, 12)
+    notificationBgCorner.Parent = notificationBackground
+    
+    -- Контейнер для размытых кругов
+    local notificationCirclesContainer = Instance.new("Frame")
+    notificationCirclesContainer.Name = "CirclesContainer"
+    notificationCirclesContainer.Size = UDim2.new(1, 0, 1, 0)
+    notificationCirclesContainer.BackgroundTransparency = 1
+    notificationCirclesContainer.Parent = notificationBackground
+    
+    -- Создаем круги для уведомления
+    for i = 1, 3 do
+        local circleGroup = Instance.new("Frame")
+        circleGroup.Name = "CircleGroup" .. i
+        local size = math.random(60, 90)
+        circleGroup.Size = UDim2.new(0, size, 0, size)
+        circleGroup.Position = UDim2.new(math.random(), 0, math.random(), 0)
+        circleGroup.BackgroundTransparency = 1
+        circleGroup.BorderSizePixel = 0
+        circleGroup.AnchorPoint = Vector2.new(0.5, 0.5)
+        
+        for j = 1, 3 do
+            local blurCircle = Instance.new("Frame")
+            local blurSize = size * (0.7 + j * 0.05)
+            blurCircle.Size = UDim2.new(0, blurSize, 0, blurSize)
+            blurCircle.Position = UDim2.new(0.5, -blurSize/2, 0.5, -blurSize/2)
+            blurCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            blurCircle.BackgroundTransparency = 0.96 + j * 0.007
+            blurCircle.BorderSizePixel = 0
+            blurCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+            
+            local blurCorner = Instance.new("UICorner")
+            blurCorner.CornerRadius = UDim.new(1, 0)
+            blurCorner.Parent = blurCircle
+            
+            blurCircle.Parent = circleGroup
+        end
+        
+        circleGroup.Parent = notificationCirclesContainer
+    end
+    
+    -- Обводка
+    local notificationStroke = Instance.new("UIStroke")
+    notificationStroke.Color = Color3.fromRGB(80, 160, 255)
+    notificationStroke.Thickness = 2
+    notificationStroke.Transparency = 0
+    notificationStroke.Parent = notificationFrame
+    
+    -- Иконка статуса
+    local statusIcon = Instance.new("TextLabel")
+    statusIcon.Name = "StatusIcon"
+    statusIcon.Size = UDim2.new(0, 24, 0, 24)
+    statusIcon.Position = UDim2.new(0.05, 0, 0.3, 0)
+    statusIcon.BackgroundTransparency = 1
+    statusIcon.Text = "✓"
+    statusIcon.TextColor3 = Color3.fromRGB(0, 200, 0)
+    statusIcon.Font = Enum.Font.GothamBold
+    statusIcon.TextSize = 18
+    statusIcon.Parent = notificationFrame
+    
+    -- Основной текст уведомления
+    local notificationText = Instance.new("TextLabel")
+    notificationText.Name = "NotificationText"
+    notificationText.Size = UDim2.new(0.7, 0, 0.5, 0)
+    notificationText.Position = UDim2.new(0.15, 0, 0.2, 0)
+    notificationText.BackgroundTransparency = 1
+    notificationText.Text = message
+    notificationText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notificationText.Font = Enum.Font.Gotham
+    notificationText.TextSize = 14
+    notificationText.TextXAlignment = Enum.TextXAlignment.Left
+    notificationText.Parent = notificationFrame
+    
+    -- Текст "нажмите чтобы скрыть"
+    local clickText = Instance.new("TextLabel")
+    clickText.Name = "ClickText"
+    clickText.Size = UDim2.new(0.7, 0, 0.3, 0)
+    clickText.Position = UDim2.new(0.15, 0, 0.6, 0)
+    clickText.BackgroundTransparency = 1
+    clickText.Text = "Click to hide notification"
+    clickText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    clickText.TextTransparency = 0.7
+    clickText.Font = Enum.Font.Gotham
+    clickText.TextSize = 10
+    clickText.TextXAlignment = Enum.TextXAlignment.Left
+    clickText.Parent = notificationFrame
+    
+    -- Контейнер для полоски таймера с обрезкой
+    local timerContainer = Instance.new("Frame")
+    timerContainer.Name = "TimerContainer"
+    timerContainer.Size = UDim2.new(1, -24, 0, 4) -- Уменьшаем ширину чтобы не заходить за края
+    timerContainer.Position = UDim2.new(0.5, 0, 1, -4)
+    timerContainer.AnchorPoint = Vector2.new(0.5, 1)
+    timerContainer.BackgroundTransparency = 1
+    timerContainer.ClipsDescendants = true
+    timerContainer.Parent = notificationFrame
+    
+    local timerContainerCorner = Instance.new("UICorner")
+    timerContainerCorner.CornerRadius = UDim.new(0, 2)
+    timerContainerCorner.Parent = timerContainer
+    
+    -- Полоска таймера
+    local timerBar = Instance.new("Frame")
+    timerBar.Name = "TimerBar"
+    timerBar.Size = UDim2.new(1, 0, 1, 0)
+    timerBar.Position = UDim2.new(0, 0, 0, 0)
+    timerBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    timerBar.BorderSizePixel = 0
+    timerBar.Parent = timerContainer
+    
+    local timerBarCorner = Instance.new("UICorner")
+    timerBarCorner.CornerRadius = UDim.new(0, 2)
+    timerBarCorner.Parent = timerBar
+    
+    -- Переменная для отслеживания состояния
+    local notificationActive = true
+    
+    -- Функция скрытия уведомления
+    local function hideNotification()
+        if not notificationActive then return end
+        notificationActive = false
+        
+        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+        local tween = TweenService:Create(notificationFrame, tweenInfo, {
+            Position = UDim2.new(0.5, 0, 0, -70),
+            Size = UDim2.new(0, 0, 0, 0)
+        })
+        tween:Play()
+        
+        tween.Completed:Connect(function()
+            if notificationGui and notificationGui.Parent then
+                notificationGui:Destroy()
+            end
+        end)
+    end
+    
+    -- Анимация появления
+    notificationFrame.Parent = notificationGui
+    
+    local showTweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    local showTween = TweenService:Create(notificationFrame, showTweenInfo, {
+        Position = UDim2.new(0.5, 0, 0, 20) -- Центрировано по горизонтали, 20 пикселей от верха
+    })
+    showTween:Play()
+    
+    -- Анимация таймера
+    local timerTweenInfo = TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+    local timerTween = TweenService:Create(timerBar, timerTweenInfo, {
+        Size = UDim2.new(0, 0, 1, 0)
+    })
+    timerTween:Play()
+    
+    -- Автоматическое скрытие через 5 секунд
+    spawn(function()
+        wait(5)
+        if notificationActive then
+            hideNotification()
+        end
+    end)
+    
+    -- Обработчик клика
+    notificationFrame.MouseButton1Click:Connect(function()
+        if notificationActive then
+            hideNotification()
+        end
+    end)
+    
+    return notificationGui
+end
+
+-- Анимация появления с масштабированием и bounce эффектом
+local function showAnimation()
+    -- Создаем круги перед показом
+    createCircles()
+    
+    mainFrame.Visible = true
+    mainFrame.Size = UDim2.new(0, 0, 0, 0) -- Начинаем с нулевого размера
+    mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    
+    -- Эффект размытия в начале
+    mainFrame.BackgroundTransparency = 0.5
+    
+    -- Анимация масштабирования с bounce эффектом
+    local tweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, 0)
+    local tween = TweenService:Create(mainFrame, tweenInfo, {
+        Size = UDim2.new(0, 350, 0, 400),
+        BackgroundTransparency = 0
+    })
+    tween:Play()
+    
+    -- Анимация появления буквы V
+    wait(0.3)
+    local vTweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local vTween = TweenService:Create(vLetter, vTweenInfo, {
+        TextTransparency = 0
+    })
+    vTween:Play()
+    
+    -- Запускаем анимацию кругов
+    spawn(animateCircles)
+end
+
+-- Анимация закрытия с масштабированием
+local function closeAnimation()
+    -- Эффект размытия в конце
+    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In, 0, false, 0)
+    local tween = TweenService:Create(mainFrame, tweenInfo, {
+        Size = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 0.5
+    })
+    tween:Play()
+    tween.Completed:Wait()
+    gui:Destroy()
+end
+
+-- Функция для анимации кнопки Copy Link
+local isAnimatingCopy = false
+local function animateCopyButton()
+    if isAnimatingCopy then return end
+    isAnimatingCopy = true
+    
+    local originalText = copyBtn.Text
+    local originalTextColor = copyBtn.TextColor3
+    
+    -- Анимация изменения текста и цвета
+    local textTweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local textTween = TweenService:Create(copyBtn, textTweenInfo, {
+        TextColor3 = Color3.fromRGB(0, 200, 0) -- Зеленый цвет для подтверждения
+    })
+    textTween:Play()
+    
+    -- Легкая анимация "пульсации"
+    local pulseTweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    local pulseTween = TweenService:Create(copyBtn, pulseTweenInfo, {
+        Size = UDim2.new(0.82, 0, 0, 42) -- Легкое увеличение
+    })
+    pulseTween:Play()
+    
+    -- Анимация тени
+    local shadowTween = TweenService:Create(copyShadow, pulseTweenInfo, {
+        Size = UDim2.new(0.82, 0, 0, 42)
+    })
+    shadowTween:Play()
+    
+    -- Меняем текст
+    copyBtn.Text = "LINK COPIED!"
+    
+    -- Ждем 2 секунды
+    wait(2)
+    
+    -- Возвращаем обратно
+    local returnTextTween = TweenService:Create(copyBtn, textTweenInfo, {
+        TextColor3 = originalTextColor -- Возвращаем исходный цвет
+    })
+    returnTextTween:Play()
+    
+    local returnPulseTween = TweenService:Create(copyBtn, pulseTweenInfo, {
+        Size = UDim2.new(0.8, 0, 0, 40) -- Возвращаем исходный размер
+    })
+    returnPulseTween:Play()
+    
+    local returnShadowTween = TweenService:Create(copyShadow, pulseTweenInfo, {
+        Size = UDim2.new(0.8, 0, 0, 40)
+    })
+    returnShadowTween:Play()
+    
+    -- Возвращаем исходный текст
+    copyBtn.Text = originalText
+    
+    isAnimatingCopy = false
+end
+
+-- Анимация для правильного ключа
+local function animateSuccess()
+    -- Отключаем кнопку на время анимации
+    activateBtn.AutoButtonColor = false
+    
+    -- Сохраняем исходные значения
+    local originalText = activateBtn.Text
+    local originalTextColor = activateBtn.TextColor3
+    local originalBackgroundColor = activateBtn.BackgroundColor3
+    
+    -- Анимация изменения текста и цвета на зеленый
+    local successTweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local successTween = TweenService:Create(activateBtn, successTweenInfo, {
+        TextColor3 = Color3.fromRGB(0, 200, 0),
+        BackgroundColor3 = Color3.fromRGB(230, 255, 230)
+    })
+    successTween:Play()
+    
+    -- Анимация тени
+    local shadowTween = TweenService:Create(activateShadow, successTweenInfo, {
+        BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+    })
+    shadowTween:Play()
+    
+    -- Анимация glow эффекта
+    local glowTween = TweenService:Create(activateGlow, successTweenInfo, {
+        ImageColor3 = Color3.fromRGB(0, 255, 0),
+        ImageTransparency = 0.4
+    })
+    glowTween:Play()
+    
+    -- Меняем текст
+    activateBtn.Text = "KEY ACTIVATED"
+    
+    -- Показываем уведомление об успехе
+    createNotification("Key activated successfully", true)
+    
+    -- Ждем завершения анимации
+    wait(1.5)
+    
+    -- Сворачиваем меню
+    closeAnimation()
+end
+
+-- Анимация для неправильного ключа с тряской
+local function animateError()
+    -- Отключаем кнопку на время анимации
+    activateBtn.AutoButtonColor = false
+    
+    -- Сохраняем исходные значения
+    local originalText = activateBtn.Text
+    local originalTextColor = activateBtn.TextColor3
+    local originalBackgroundColor = activateBtn.BackgroundColor3
+    local originalPosition = activateBtn.Position -- Сохраняем исходную позицию
+    
+    -- Анимация изменения текста и цвета на красный
+    local errorTweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local errorTween = TweenService:Create(activateBtn, errorTweenInfo, {
+        TextColor3 = Color3.fromRGB(200, 0, 0),
+        BackgroundColor3 = Color3.fromRGB(255, 230, 230)
+    })
+    errorTween:Play()
+    
+    -- Анимация тени
+    local shadowTween = TweenService:Create(activateShadow, errorTweenInfo, {
+        BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+    })
+    shadowTween:Play()
+    
+    -- Анимация glow эффекта
+    local glowTween = TweenService:Create(activateGlow, errorTweenInfo, {
+        ImageColor3 = Color3.fromRGB(255, 0, 0),
+        ImageTransparency = 0.4
+    })
+    glowTween:Play()
+    
+    -- Анимация "тряски" кнопки
+    local shakeIntensity = 5 -- Интенсивность тряски
+    local shakeDuration = 0.5 -- Длительность тряски
+    local shakeCount = 6 -- Количество колебаний
+    
+    local startTime = tick()
+    local connection
+    connection = RunService.Heartbeat:Connect(function()
+        local elapsed = tick() - startTime
+        if elapsed >= shakeDuration then
+            connection:Disconnect()
+            -- Гарантированно возвращаем на исходную позицию
+            activateBtn.Position = originalPosition
+            return
+        end
+        
+        -- Вычисляем прогресс анимации (0 to 1)
+        local progress = elapsed / shakeDuration
+        local easeProgress = 1 - (progress * progress) -- Ease out
+        
+        -- Вычисляем смещение с затуханием
+        local offset = math.sin(elapsed * math.pi * 2 * shakeCount) * shakeIntensity * easeProgress
+        activateBtn.Position = UDim2.new(
+            originalPosition.X.Scale, 
+            originalPosition.X.Offset + offset,
+            originalPosition.Y.Scale, 
+            originalPosition.Y.Offset
+        )
+    end)
+    
+    -- Меняем текст
+    activateBtn.Text = "INVALID KEY"
+    
+    -- Ждем завершения анимации тряски + дополнительное время
+    wait(shakeDuration + 0.5)
+    
+    -- Возвращаем обратно
+    local returnTweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local returnTween = TweenService:Create(activateBtn, returnTweenInfo, {
+        TextColor3 = originalTextColor,
+        BackgroundColor3 = originalBackgroundColor,
+        Position = originalPosition -- Используем сохраненную позицию
+    })
+    returnTween:Play()
+    
+    local returnShadowTween = TweenService:Create(activateShadow, returnTweenInfo, {
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    })
+    returnShadowTween:Play()
+    
+    local returnGlowTween = TweenService:Create(activateGlow, returnTweenInfo, {
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        ImageTransparency = 0.8
+    })
+    returnGlowTween:Play()
+    
+    -- Возвращаем исходный текст
+    activateBtn.Text = originalText
+    
+    -- Включаем кнопку обратно
+    activateBtn.AutoButtonColor = false
+end
+
+-- Функция проверки ключа
+local function checkKey()
+    local enteredKey = keyBox.Text:lower():gsub("%s+", "") -- Приводим к нижнему регистру и убираем пробелы
+    local correctKey = "velopremium"
+    
+    -- Проверка на пустой ключ
+    if enteredKey == "" then
+        animateError()
+        return
+    end
+    
+    if enteredKey == correctKey then
+        animateSuccess()
+    else
+        animateError()
+    end
+end
+
+-- Крутая анимация для крестика при наведении
+local function setupCloseButtonEffects()
+    local originalRotation = closeBtn.Rotation
+    local originalSize = closeBtn.Size
+    local originalPosition = closeBtn.Position
+    local originalTextColor = closeBtn.TextColor3
+    
+    closeBtn.MouseEnter:Connect(function()
+        -- Анимация вращения и увеличения
+        local tweenInfo1 = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+        local tween1 = TweenService:Create(closeBtn, tweenInfo1, {
+            Rotation = 90,
+            Size = UDim2.new(0, 35, 0, 35),
+            Position = UDim2.new(0.88, -2.5, 0.02, -2.5),
+            TextColor3 = Color3.fromRGB(255, 100, 100) -- Красный цвет при наведении
+        })
+        tween1:Play()
+        
+        -- Дополнительная анимация "покачивания" после вращения
+        wait(0.3)
+        local tweenInfo2 = TweenInfo.new(0.2, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out)
+        local tween2 = TweenService:Create(closeBtn, tweenInfo2, {
+            Rotation = 85
+        })
+        tween2:Play()
+    end)
+    
+    closeBtn.MouseLeave:Connect(function()
+        -- Возвращаем в исходное состояние
+        local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(closeBtn, tweenInfo, {
+            Rotation = 0,
+            Size = originalSize,
+            Position = originalPosition,
+            TextColor3 = originalTextColor -- Исходный цвет
+        })
+        tween:Play()
+    end)
+end
+
+-- Эффекты при наведении на кнопки
+local function setupButtonEffects(button, shadow)
+    local originalSize = button.Size
+    local originalPos = button.Position
+    local originalShadowPos = shadow and shadow.Position
+    
+    button.MouseEnter:Connect(function()
+        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(button, tweenInfo, {
+            Size = originalSize + UDim2.new(0.02, 0, 0.02, 0),
+            Position = originalPos - UDim2.new(0.01, 0, 0.01, 0)
+        })
+        tween:Play()
+        
+        if shadow then
+            local shadowTween = TweenService:Create(shadow, tweenInfo, {
+                Size = originalSize + UDim2.new(0.02, 0, 0.02, 0),
+                Position = originalShadowPos - UDim2.new(0.01, 0, 0.01, 0)
+            })
+            shadowTween:Play()
+        end
+        
+        if button == activateBtn then
+            local glowTween = TweenService:Create(activateGlow, tweenInfo, {
+                ImageTransparency = 0.6
+            })
+            glowTween:Play()
+        end
+    end)
+    
+    button.MouseLeave:Connect(function()
+        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(button, tweenInfo, {
+            Size = originalSize,
+            Position = originalPos
+        })
+        tween:Play()
+        
+        if shadow then
+            local shadowTween = TweenService:Create(shadow, tweenInfo, {
+                Size = originalSize,
+                Position = originalShadowPos
+            })
+            shadowTween:Play()
+        end
+        
+        if button == activateBtn then
+            local glowTween = TweenService:Create(activateGlow, tweenInfo, {
+                ImageTransparency = 0.8
+            })
+            glowTween:Play()
+        end
+    end)
+end
+
+-- Собираем интерфейс
+activateShadow.Parent = mainFrame
+activateBtn.Parent = mainFrame  
+copyShadow.Parent = mainFrame
+copyBtn.Parent = mainFrame
+mainFrame.Parent = gui
+
+-- Настраиваем эффекты кнопок
+setupButtonEffects(activateBtn, activateShadow)
+setupButtonEffects(copyBtn, copyShadow)
+
+-- Настраиваем крутую анимацию для крестика
+setupCloseButtonEffects()
+
+-- Запускаем анимацию появления
+showAnimation()
+
+-- Обработчики событий
+activateBtn.MouseButton1Click:Connect(function()
+    checkKey()
+end)
+
+copyBtn.MouseButton1Click:Connect(function()
+    print("Copy Link clicked")
+    setclipboard("https://example.com/get-key")
+    animateCopyButton()
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    closeAnimation()
+end)
