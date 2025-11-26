@@ -67,7 +67,7 @@ local OBJECTS = {
     ['Orcaledon'] = { emoji = '🐭', important = true },
     ['W or L'] = { emoji = '🏆', important = true },
     ['Lavadorito Spinito'] = { emoji = '📺', important = true },
-    ['Gobblino Uniciclino'] = { emoji = '🕊️', important = true },
+    ['Gobblino Uniciclino'] = { emoji = '🕊️', important = false },
     ['Fishino Clownino'] = { emoji = '🐠', important = true },
     ['La Ginger Sekolah'] = { emoji = '🎄', important = true },
     
