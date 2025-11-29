@@ -72,6 +72,7 @@ local OBJECTS = {
     ['La Ginger Sekolah'] = { emoji = '🎄', important = true },
     ['Los Planitos'] = { emoji = '🪐', important = true },
     ['Guest 666'] = { emoji = '👿', important = true },
+    ['Capitano Moby'] = { emoji = '🛥️', important = true },
     
     
 }
