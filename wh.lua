@@ -73,6 +73,9 @@ local OBJECTS = {
     ['Los Planitos'] = { emoji = '🪐', important = true },
     ['Guest 666'] = { emoji = '👿', important = true },
     ['Capitano Moby'] = { emoji = '🛥️', important = true },
+    ['Christmas Chicleteira'] = { emoji = '🛷', important = true },
+    ['La Jolly Grande'] = { emoji = '☃️', important = true },
+    ['Ginger'] = { emoji = '🧸', important = true },
     
     
 }
