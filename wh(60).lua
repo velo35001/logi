@@ -1,3 +1,4 @@
+
 -- 🎯 BRAINROT INCOME SCANNER v2.0 (ПОЛНАЯ ВЕРСИЯ)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
 -- Запуск: автоматически при старте + по клавише F
@@ -8,52 +9,81 @@ local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
 local INCOME_THRESHOLD = 100_000_000 -- 50M/s минимум для уведомления
-local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1426282608710647952/bmfmWPMug07ht7nRa_QeCVi7tfItybezKVkZ2tmw7lsODttiUnSnYJArl6UchxqIbeyT' -- Хук пользователя
-
--- Webhooks для каналов подписок
-local WEBHOOK_FREE = 'https://ptb.discord.com/api/webhooks/1446067522133688330/V335liKqTPmo44gANes1cyuqMnK7gD4rNdCc0fzyzOr-D-VNpmKOnfhP0vtwQcgrLXPF'
-local WEBHOOK_SECRET = 'https://ptb.discord.com/api/webhooks/1446067666292047974/79kgyOkPXpWwIYFzbLcs8zmlQIoyabgPdrNNGuLqSKNLS3akX14zNvvzp8DQxfk9FxLg'
-local WEBHOOK_ABUSE = 'https://ptb.discord.com/api/webhooks/1446067834298830869/Gxcvf_nM3s1VSixorffVqLn9tcwT5BBIYlmWMt8JsApH-EXKDw90uRhYMeqyo5WhW4CI'
-
--- Пороги для каналов (в единицах дохода)
-local FREE_MIN = 1_000_000 -- 1M/s
-local FREE_MAX = 10_000_000 -- 10M/s
-local SECRET_MIN = 10_000_000 -- 10M/s
-local SECRET_MAX = 120_000_000 -- 120M/s
-local ABUSE_MIN = 120_000_000 -- 120M/s
+local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1426282608710647952/bmfmWPMug07ht7nRa_QeCVi7tfItybezKVkZ2tmw7lsODttiUnSnYJArl6UchxqIbeyT'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
--- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ВАЖНОСТЬЮ (только important = true объекты отправляются пользователю)
+-- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ВАЖНОСТЬЮ
 local OBJECTS = {
+    
+    ['Torrtuginni Dragonfrutini'] = { emoji = '🐉', important = false },
+    ['Pot Hotsp213ot'] = { emoji = '📱', important = false },
+    ['La Grande C3123ombi1nasion'] = { emoji = '❗️', important = false },
     ['Garama and Madundung'] = { emoji = '🧂', important = true },
+    ['Secret Lucksfsfsfy Block'] = { emoji = '⬛️', important = false },
     ['Dragon Cannelloni'] = { emoji = '🐲', important = true },
+    ['Nuclearo Dinossauro'] = { emoji = '🦕', important = true },
+    ['Las Vaquitas Satu323rnitas'] = { emoji = '👦', important = false },
+    ['Chicleteira Bici323cl1eteira'] = { emoji = '🚲', important = false },
+    ['Los Combinasi1323onas'] = { emoji = '⚒️', important = false },
+    ['Agarrini la 1Palini'] = { emoji = '🥄', important = false },
+    ['Los Hotsp1otsitos'] = { emoji = '☎️', important = false },
+    ['Esok Se323kolah'] = { emoji = '🏠', important = true },
+    ['Nooo My Hots1pot'] = { emoji = '👽', important = false },
     ['La Supreme Combinasion'] = { emoji = '🔫', important = true },
+    ['Admin Luck1y Block'] = { emoji = '🆘', important = false },
+    ['Ketupat Kepat'] = { emoji = '🍏', important = true },
     ['Strawberry Elephant'] = { emoji = '🐘', important = true },
+    ['Spaghetti Tualetti'] = { emoji = '🚽', important = false },
     ['Ketchuru and Musturu'] = { emoji = '🍾', important = true },
     ['La Secret Combinasion'] = { emoji = '❓', important = true },
+    ['La Kark56656erkar Combinasion'] = { emoji = '🥊', important = false },
+    ['Los Bros'] = { emoji = '📱', important = true },
+    ['Tralaledon'] = { emoji = '🦈', important = true },
+    ['La Extinct Grande'] = { emoji = '🩻', important = true },
+    ['Los Chicl1eteiras'] = { emoji = '🚳', important = true },
+    ['Las S233is'] = { emoji = '👧', important = true },
+    ['Tacorita Bicdsdicleta'] = { emoji = '📱', important = true },
+    ['Tictac Sahur'] = { emoji = '🕰️', important = true },
+    ['Celularcini Viciosini'] = { emoji = '📞', important = true },
+    ['Los Primos'] = { emoji = '🙆‍♂️', important = true },
+    ['Tang Tang Keletang'] = { emoji = '📢', important = true },
+    ['Money Money Puggy'] = { emoji = '🐶', important = false },
     ['Burguro And Fryuro'] = { emoji = '🍔', important = true },
-    ['Spooky and Pumpky'] = { emoji = '🎃', important = true },
+    ['Chillin Chili'] = { emoji = '🌶', important = true },
+    ['Eviled323on'] = { emoji = '👹', important = true },
+    ['La Spooky Grande'] = { emoji = '🟧', important = true },
+    ['Los Mo21bilis'] = { emoji = '🧕', important = false },
+    ['Spooky and Pumpky'] = { emoji = '🎃', important = true, },
+    ['Mietet11eira Bicicleteira'] = { emoji = '☠️', important = true },
     ['Meowl'] = { emoji = '🐈', important = true },
+    ['Chipso and Queso'] = { emoji = '🧀', important = false },
     ['La Casa Boo'] = { emoji = '👁‍🗨', important = true },
     ['Headless Horseman'] = { emoji = '🐴', important = true },
+    ['Los Tacoritas'] = { emoji = '💀', important = true },
+    ['La Taco Combinasion'] = { emoji = '👒', important = true },
     ['Cooki and Milki'] = { emoji = '🍪', important = true },
     ['Fragrama and Chocrama'] = { emoji = '🍫', important = true },
+    ['Los Spaghettis'] = { emoji = '🍝', important = true },
+    ['Orcaledon'] = { emoji = '🐭', important = true },
+    ['W or L'] = { emoji = '🏆', important = true },
     ['Lavadorito Spinito'] = { emoji = '📺', important = true },
+    ['Gobblino Uniciclino'] = { emoji = '🕊️', important = false },
+    ['Fishino Clownino'] = { emoji = '🐠', important = true },
     ['La Ginger Sekolah'] = { emoji = '🎄', important = true },
-    ['Capitano Moby'] = { emoji = '🛥', important = true },
+    ['Los Planitos'] = { emoji = '🪐', important = true },
+     ['Capitano Moby'] = { emoji = '🛥️', important = true },
+    
+    
 }
 
--- Создаем список важных объектов (отправляются только пользователю)
+-- Создаем список важных объектов
 local ALWAYS_IMPORTANT = {}
 for name, cfg in pairs(OBJECTS) do
     if cfg.important then
         ALWAYS_IMPORTANT[name] = true
     end
 end
-
--- Отслеживание отправленных сообщений (чтобы не дублировать)
-local sentMessages = {}
 
 -- 💰 ПАРСЕР ДОХОДА: принимаем только строки, оканчивающиеся на "/s"
 -- С суффиксом масштаба (K/M/B) в любом регистре или без него.
@@ -350,42 +380,6 @@ local function shouldShow(name, gen)
     return (type(gen) == 'number') and gen >= INCOME_THRESHOLD
 end
 
--- Определяет, куда отправлять объект: 'user', 'free', 'secret', 'abuse', или nil (не отправлять)
-local function getDestination(name, gen)
-    if not name or not gen or type(gen) ~= 'number' then
-        return nil
-    end
-    
-    -- Проверяем, есть ли объект в списке важных (important = true)
-    if ALWAYS_IMPORTANT[name] then
-        -- Важные объекты всегда отправляются пользователю
-        return 'user'
-    end
-    
-    -- Все остальные объекты распределяются по каналам по доходу
-    if gen >= ABUSE_MIN then
-        return 'abuse'
-    elseif gen >= SECRET_MIN then
-        return 'secret'
-    elseif gen >= FREE_MIN then
-        return 'free'
-    end
-    
-    return nil
-end
-
--- Проверяет, был ли объект уже отправлен
-local function wasSent(name, gen, destination)
-    local key = string.format('%s:%d:%s', name, gen, destination)
-    return sentMessages[key] == true
-end
-
--- Отмечает объект как отправленный
-local function markAsSent(name, gen, destination)
-    local key = string.format('%s:%d:%s', name, gen, destination)
-    sentMessages[key] = true
-end
-
 -- 📤 DISCORD УВЕДОМЛЕНИЯ
 local function getRequester()
     return http_request
@@ -395,49 +389,52 @@ local function getRequester()
         or (KRNL_HTTP and KRNL_HTTP.request)
 end
 
--- Отправляет уведомление в указанный канал
-local function sendToChannel(objects, destination, channelName)
-    if #objects == 0 then
-        return false
-    end
-    
+local function sendDiscordNotification(filteredObjects)
     local req = getRequester()
     if not req then
         warn('❌ Нет HTTP API в executor')
-        return false
+        return
     end
-    
-    -- Определяем webhook URL
-    local webhookUrl = nil
-    if destination == 'user' then
-        webhookUrl = DISCORD_WEBHOOK_URL
-    elseif destination == 'free' then
-        webhookUrl = WEBHOOK_FREE
-    elseif destination == 'secret' then
-        webhookUrl = WEBHOOK_SECRET
-    elseif destination == 'abuse' then
-        webhookUrl = WEBHOOK_ABUSE
-    end
-    
-    if not webhookUrl or webhookUrl == '' then
-        warn(string.format('❌ Webhook для %s не настроен', channelName))
-        return false
-    end
-    
+
     local jobId = game.JobId
     local placeId = game.PlaceId
-    
-    -- Сортируем по доходу (по убыванию)
-    table.sort(objects, function(a, b)
+
+    if #filteredObjects == 0 then
+        print('🔍 Важных объектов не найдено')
+        return
+    end
+
+    -- Сортируем по доходу (важные сначала, затем по убыванию дохода)
+    local important, regular = {}, {}
+    for _, obj in ipairs(filteredObjects) do
+        if ALWAYS_IMPORTANT[obj.name] then
+            table.insert(important, obj)
+        else
+            table.insert(regular, obj)
+        end
+    end
+
+    table.sort(important, function(a, b)
         return a.gen > b.gen
     end)
-    
+    table.sort(regular, function(a, b)
+        return a.gen > b.gen
+    end)
+
+    local sorted = {}
+    for _, obj in ipairs(important) do
+        table.insert(sorted, obj)
+    end
+    for _, obj in ipairs(regular) do
+        table.insert(sorted, obj)
+    end
+
     -- Формируем красивый список (максимум 10)
     local objectsList = {}
-    for i = 1, math.min(10, #objects) do
-        local obj = objects[i]
-        local emoji = (OBJECTS[obj.name] and OBJECTS[obj.name].emoji) or '💰'
-        local mark = ALWAYS_IMPORTANT[obj.name] and '❗ ' or ''
+    for i = 1, math.min(10, #sorted) do
+        local obj = sorted[i]
+        local emoji = OBJECTS[obj.name].emoji or '💰'
+        local mark = ALWAYS_IMPORTANT[obj.name] and '⭐ ' or ''
         table.insert(
             objectsList,
             string.format(
@@ -450,27 +447,25 @@ local function sendToChannel(objects, destination, channelName)
         )
     end
     local objectsText = table.concat(objectsList, '\n')
-    
-    -- Телепорт команда
+
+    -- Телепорт команда (простой текст для легкого копирования)
     local teleportText = string.format(
         "`local ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')`",
         placeId,
         jobId
     )
-    
+
     -- Кнопка для копирования JobId
     local copyButtonText = string.format(
         "📋 Нажмите чтобы скопировать JobId: ```%s```",
         jobId
     )
-    
-    local title = destination == 'user' and '💎 Найдены ценные объекты в Steal a brainrot!' or string.format('💎 Найдены объекты в Steal a brainrot! (%s)', channelName)
-    
+
     local payload = {
         username = '🎯 Brainrot Scanner',
         embeds = {
             {
-                title = title,
+                title = '💎 Найдены ценные объекты в Steal a brainrot!',
                 color = 0x2f3136,
                 fields = {
                     {
@@ -479,7 +474,7 @@ local function sendToChannel(objects, destination, channelName)
                         inline = false,
                     },
                     {
-                        name = '💰 Объекты:',
+                        name = '💰 Важные объекты:',
                         value = objectsText,
                         inline = false,
                     },
@@ -496,8 +491,8 @@ local function sendToChannel(objects, destination, channelName)
                 },
                 footer = {
                     text = string.format(
-                        'Найдено: %d объектов • %s',
-                        #objects,
+                        'Найдено: %d важных • %s',
+                        #filteredObjects,
                         os.date('%H:%M:%S')
                     ),
                 },
@@ -505,28 +500,26 @@ local function sendToChannel(objects, destination, channelName)
             },
         },
     }
-    
-    print(string.format('📤 Отправляю %d объектов в %s', #objects, channelName))
-    
+
+    print(
+        '📤 Отправляю уведомление с',
+        #filteredObjects,
+        'объектами'
+    )
+
     local ok, res = pcall(function()
         return req({
-            Url = webhookUrl,
+            Url = DISCORD_WEBHOOK_URL,
             Method = 'POST',
             Headers = { ['Content-Type'] = 'application/json' },
             Body = HttpService:JSONEncode(payload),
         })
     end)
-    
+
     if ok then
-        print(string.format('✅ Уведомление отправлено в %s!', channelName))
-        -- Отмечаем все объекты как отправленные
-        for _, obj in ipairs(objects) do
-            markAsSent(obj.name, obj.gen, destination)
-        end
-        return true
+        print('✅ Уведомление отправлено в Discord!')
     else
-        warn(string.format('❌ Ошибка отправки в %s:', channelName), res)
-        return false
+        warn('❌ Ошибка отправки:', res)
     end
 end
 
@@ -535,48 +528,24 @@ local function scanAndNotify()
     print('🔍 Сканирую все объекты...')
     local allFound = collectAll(8.0) -- 8 секунд таймаут
 
-    -- Распределяем объекты по каналам
-    local forUser = {} -- Объекты для пользователя (important или исключения выше порога)
-    local forFree = {} -- Объекты для канала free (1-10M/s)
-    local forSecret = {} -- Объекты для канала secret (10-120M/s)
-    local forAbuse = {} -- Объекты для канала abuse (120M/s+)
-    
+    -- Фильтрация по важности и доходу
+    local filtered = {}
     for _, obj in ipairs(allFound) do
-        -- Проверяем, был ли объект уже отправлен
-        local destination = getDestination(obj.name, obj.gen)
-        
-        if destination then
-            -- Проверяем, не был ли уже отправлен
-            if wasSent(obj.name, obj.gen, destination) then
-                print(string.format('⏭️ Объект %s уже был отправлен в %s', obj.name, destination))
-            else
-                if destination == 'user' then
-                    table.insert(forUser, obj)
-                elseif destination == 'free' then
-                    table.insert(forFree, obj)
-                elseif destination == 'secret' then
-                    table.insert(forSecret, obj)
-                elseif destination == 'abuse' then
-                    table.insert(forAbuse, obj)
-                end
-            end
+        if OBJECTS[obj.name] and shouldShow(obj.name, obj.gen) then
+            table.insert(filtered, obj)
         end
     end
 
     -- Вывод в консоль
     print('Найдено всего объектов:', #allFound)
-    print('Для пользователя:', #forUser)
-    print('Для free:', #forFree)
-    print('Для secret:', #forSecret)
-    print('Для abuse:', #forAbuse)
+    print('Показано важных:', #filtered)
 
-    -- Выводим все объекты в консоль
-    for _, obj in ipairs(forUser) do
-        local emoji = (OBJECTS[obj.name] and OBJECTS[obj.name].emoji) or '💰'
-        local mark = ALWAYS_IMPORTANT[obj.name] and '❗ ' or ''
+    for _, obj in ipairs(filtered) do
+        local emoji = OBJECTS[obj.name].emoji or '💰'
+        local mark = ALWAYS_IMPORTANT[obj.name] and '⭐ ' or ''
         print(
             string.format(
-                '%s%s %s: %s (%s) → USER',
+                '%s%s %s: %s (%s)',
                 mark,
                 emoji,
                 obj.name,
@@ -585,69 +554,11 @@ local function scanAndNotify()
             )
         )
     end
-    
-    for _, obj in ipairs(forFree) do
-        local emoji = (OBJECTS[obj.name] and OBJECTS[obj.name].emoji) or '💰'
-        print(
-            string.format(
-                '%s %s: %s (%s) → FREE',
-                emoji,
-                obj.name,
-                formatIncomeNumber(obj.gen),
-                obj.location or 'Unknown'
-            )
-        )
-    end
-    
-    for _, obj in ipairs(forSecret) do
-        local emoji = (OBJECTS[obj.name] and OBJECTS[obj.name].emoji) or '💰'
-        print(
-            string.format(
-                '%s %s: %s (%s) → SECRET',
-                emoji,
-                obj.name,
-                formatIncomeNumber(obj.gen),
-                obj.location or 'Unknown'
-            )
-        )
-    end
-    
-    for _, obj in ipairs(forAbuse) do
-        local emoji = (OBJECTS[obj.name] and OBJECTS[obj.name].emoji) or '💰'
-        print(
-            string.format(
-                '%s %s: %s (%s) → ABUSE',
-                emoji,
-                obj.name,
-                formatIncomeNumber(obj.gen),
-                obj.location or 'Unknown'
-            )
-        )
-    end
 
-    -- Отправляем уведомления (только одно сообщение в канал с наивысшим приоритетом)
-    -- Приоритеты: USER > ABUSE > SECRET > FREE
-    local sent = false
-    
-    -- Приоритет 1: USER (высший)
-    if #forUser > 0 then
-        sendToChannel(forUser, 'user', 'USER')
-        sent = true
-    -- Приоритет 2: ABUSE
-    elseif #forAbuse > 0 then
-        sendToChannel(forAbuse, 'abuse', 'ABUSE')
-        sent = true
-    -- Приоритет 3: SECRET
-    elseif #forSecret > 0 then
-        sendToChannel(forSecret, 'secret', 'SECRET')
-        sent = true
-    -- Приоритет 4: FREE (низший)
-    elseif #forFree > 0 then
-        sendToChannel(forFree, 'free', 'FREE')
-        sent = true
-    end
-    
-    if not sent then
+    -- Отправляем уведомление если есть что показать
+    if #filtered > 0 then
+        sendDiscordNotification(filtered)
+    else
         print('🔍 Нет объектов для уведомления')
     end
 end
