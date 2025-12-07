@@ -14,7 +14,8 @@ print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
 -- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ВАЖНОСТЬЮ
 local OBJECTS = {
-    
+
+    ['Noobini Pizzanini'] = { emoji = '🖕🏿', important = false },
     ['Torrtuginni Dragonfrutini'] = { emoji = '🐉', important = false },
     ['Pot Hotsp213ot'] = { emoji = '📱', important = false },
     ['La Grande C3123ombi1nasion'] = { emoji = '❗️', important = false },
@@ -71,8 +72,8 @@ local OBJECTS = {
     ['Fishino Clownino'] = { emoji = '🐠', important = true },
     ['La Ginger Sekolah'] = { emoji = '🎄', important = true },
     ['Los Planitos'] = { emoji = '🪐', important = true },
-     ['Capitano Moby'] = { emoji = '🛥️', important = true },
-        ['Christmas Chicleteira'] = { emoji = '🛷', important = true },
+    ['Capitano Moby'] = { emoji = '🛥️', important = true },
+    ['Christmas Chicleteira'] = { emoji = '🛷', important = true },
     ['La Jolly Grande'] = { emoji = '☃️', important = true },
     ['Ginger'] = { emoji = '🧸', important = true },
     
