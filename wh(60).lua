@@ -1,21 +1,16 @@
--- 🎯 BRAINROT INCOME SCANNER v2.0 (ПОЛНАЯ ВЕРСИЯ)
--- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
--- Запуск: автоматически при старте + по клавише F
-
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
--- ⚙️ НАСТРОЙКИ
-local INCOME_THRESHOLD = 100_000_000 -- 50M/s минимум для уведомления
+local INCOME_THRESHOLD = 100_000_000 
 local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1447621488831369367/qmn45cMh_W6IvODOPhUs12-0yWwFBbHrEZA6HP2n6l7A5sW360zkweSPHEa9Tcmpmerl' -- Хук пользователя
 
--- Webhooks для каналов подписок
-local WEBHOOK_FREE = 'https://ptb.discord.com/api/webhooks/1446067522133688330/V335liKqTPmo44gANes1cyuqMnK7gD4rNdCc0fzyzOr-D-VNpmKOnfhP0vtwQcgrLXPF'
-local WEBHOOK_SECRET = 'https://ptb.discord.com/api/webhooks/1446067666292047974/79kgyOkPXpWwIYFzbLcs8zmlQIoyabgPdrNNGuLqSKNLS3akX14zNvvzp8DQxfk9FxLg'
-local WEBHOOK_ABUSE = 'https://ptb.discord.com/api/webhooks/1446067834298830869/Gxcvf_nM3s1VSixorffVqLn9tcwT5BBIYlmWMt8JsApH-EXKDw90uRhYMeqyo5WhW4CI'
+local WEBHOOK_FREE = 'https://discord.com/api/webhooks/1447629372113686648/91gznxDkpz2-87juWXLAgxuEGlf0IIhurtLrn9SWlEdAOruu7zLoPqAACKazmjxMe5Yv'
+local WEBHOOK_SECRET = 'https://discord.com/api/webhooks/1447629908607111241/Tg8MRaVxFs4SOYYoZS7z7b_9idZRFCO_WghZyb93naovLaaxOxiFN1n5Sk_VHUquG7dM'
+local WEBHOOK_ABUSE = 'https://discord.com/api/webhooks/1447630014592974858/h8kyzQzi1Jajg7ZJqGfdtEJK5F-BAKhszMNmFbahYHpzXTnj4A8BNAjTAbuQY4OkbbOr'
 
--- Пороги для каналов (в единицах дохода)
+local JOIN_LINK = "https://fern.wtf/joiner?placeId="..game.PlaceId.."&gameInstanceId="..game.JobId
+
 local FREE_MIN = 1_000_000 -- 1M/s
 local FREE_MAX = 10_000_000 -- 10M/s
 local SECRET_MIN = 10_000_000 -- 10M/s
@@ -24,7 +19,6 @@ local ABUSE_MIN = 120_000_000 -- 120M/s
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
--- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ВАЖНОСТЬЮ (только important = true объекты отправляются пользователю)
 local OBJECTS = {
     ['Garama and Madundung'] = { emoji = '🧂', important = true },
     ['Dragon Cannelloni'] = { emoji = '🐲', important = true },
@@ -44,7 +38,6 @@ local OBJECTS = {
     ['Capitano Moby'] = { emoji = '🛥', important = true },
 }
 
--- Создаем список важных объектов (отправляются только пользователю)
 local ALWAYS_IMPORTANT = {}
 for name, cfg in pairs(OBJECTS) do
     if cfg.important then
@@ -52,18 +45,13 @@ for name, cfg in pairs(OBJECTS) do
     end
 end
 
--- Отслеживание отправленных сообщений (чтобы не дублировать)
 local sentMessages = {}
 
--- 💰 ПАРСЕР ДОХОДА: принимаем только строки, оканчивающиеся на "/s"
--- С суффиксом масштаба (K/M/B) в любом регистре или без него.
 local function parseGenerationText(s)
     if type(s) ~= 'string' or s == '' then
         return nil
     end
-    -- Нормализация: убираем $, запятые и пробелы
     local norm = s:gsub('%$', ''):gsub(',', ''):gsub('%s+', '')
-    -- Форматы: 10/s, 2.5M/s, 750k/s, 1b/s
     local num, suffix = norm:match('^([%-%d%.]+)([KkMmBb]?)/s$')
     if not num then
         return nil
@@ -441,7 +429,7 @@ local function sendToChannel(objects, destination, channelName)
         table.insert(
             objectsList,
             string.format(
-                '%s%s **%s** (%s)',
+                '%s%s %s (%s)',
                 mark,
                 emoji,
                 obj.name,
@@ -453,50 +441,51 @@ local function sendToChannel(objects, destination, channelName)
     
     -- Телепорт команда
     local teleportText = string.format(
-        "`local ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')`",
+        "local ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')",
         placeId,
         jobId
     )
     
     -- Кнопка для копирования JobId
     local copyButtonText = string.format(
-        "📋 Нажмите чтобы скопировать JobId: ```%s```",
+        "📋 Click to copy JobId: ```%s```",
         jobId
     )
     
-    local title = destination == 'user' and '💎 Найдены ценные объекты в Steal a brainrot!' or string.format('💎 Найдены объекты в Steal a brainrot! (%s)', channelName)
+    local title = destination == 'user' and '🕷️ | Sammy Logs ON TOP!' or string.format('🕷️ | Found objects in Steal a brainrot! (%s)', channelName)
     
     local payload = {
-        username = '🎯 Brainrot Scanner',
+        username = '🕷️ | Sammy Product',
         embeds = {
             {
                 title = title,
-                color = 0x2f3136,
+                color = 0xf44336,
                 fields = {
                     {
-                        name = '🆔 Сервер (Job ID)',
+                        name = '🆔 Job ID',
                         value = string.format('```%s```', jobId),
                         inline = false,
                     },
                     {
-                        name = '💰 Объекты:',
-                        value = objectsText,
+                        name = '💰 Objects:',
+                        value = string.format('```\n%s\n```', objectsText),
                         inline = false,
                     },
                     {
-                        name = '🚀 Телепорт команда:',
-                        value = teleportText,
+                        name = '🚀 Teleport command:',
+                        value = string.format('```lua\n%s\n```', teleportText),
                         inline = false,
                     },
                     {
-                        name = '📋 Скопировать JobId',
-                        value = copyButtonText,
+                        name = '🔗 Join Link:',
+                        value =  string.format('\n%s\n', JOIN_LINK),
                         inline = false,
                     },
+
                 },
                 footer = {
                     text = string.format(
-                        'Найдено: %d объектов • %s',
+                        'Total: %d Brainrots • %s',
                         #objects,
                         os.date('%H:%M:%S')
                     ),
