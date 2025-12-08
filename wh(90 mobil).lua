@@ -3,7 +3,7 @@ local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
 local INCOME_THRESHOLD = 100_000_000 
-local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1447621488831369367/qmn45cMh_W6IvODOPhUs12-0yWwFBbHrEZA6HP2n6l7A5sW360zkweSPHEa9Tcmpmerl' -- Хук пользователя
+local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz' -- Хук пользователя
 
 local WEBHOOK_FREE = 'https://discord.com/api/webhooks/1447629372113686648/91gznxDkpz2-87juWXLAgxuEGlf0IIhurtLrn9SWlEdAOruu7zLoPqAACKazmjxMe5Yv'
 local WEBHOOK_SECRET = 'https://discord.com/api/webhooks/1447629908607111241/Tg8MRaVxFs4SOYYoZS7z7b_9idZRFCO_WghZyb93naovLaaxOxiFN1n5Sk_VHUquG7dM'
