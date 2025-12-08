@@ -8,7 +8,7 @@ local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
 local INCOME_THRESHOLD = 100_000_000 -- 50M/s минимум для уведомления
-local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1426282608710647952/bmfmWPMug07ht7nRa_QeCVi7tfItybezKVkZ2tmw7lsODttiUnSnYJArl6UchxqIbeyT' -- Хук пользователя
+local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1447621488831369367/qmn45cMh_W6IvODOPhUs12-0yWwFBbHrEZA6HP2n6l7A5sW360zkweSPHEa9Tcmpmerl' -- Хук пользователя
 
 -- Webhooks для каналов подписок
 local WEBHOOK_FREE = 'https://ptb.discord.com/api/webhooks/1446067522133688330/V335liKqTPmo44gANes1cyuqMnK7gD4rNdCc0fzyzOr-D-VNpmKOnfhP0vtwQcgrLXPF'
