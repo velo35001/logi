@@ -1,4 +1,4 @@
--- 🎯 BRAINROT INCOME SCANNER v2.1 (С ИНДИВИДУАЛЬНЫМИ ПОРОГАМИ)
+-- 🎯 BRAINROT INCOME SCANNER v2.0 (ИНДИВИДУАЛЬНЫЕ ПОРОГИ)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
 -- Запуск: автоматически при старте + по клавише F
 
@@ -7,86 +7,63 @@ local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
-local GLOBAL_INCOME_THRESHOLD = 200_000_000 -- Глобальный минимум для объектов без индивидуальной настройки
+local DEFAULT_THRESHOLD = 50_000_000 -- Порог по умолчанию
 local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
 
-print('🎯 Brainrot Scanner v2.1 | JobId:', game.JobId)
+print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
--- 🎮 ОБЪЕКТЫ С ЭМОДЗИ, ВАЖНОСТЬЮ И ИНДИВИДУАЛЬНЫМ ПОРОГОМ
--- threshold: индивидуальный порог дохода для этого объекта (nil = использовать глобальный)
--- important: всегда показывать независимо от дохода
+-- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ИНДИВИДУАЛЬНЫМИ ПОРОГАМИ
 local OBJECTS = {
-    ['Garama and Madundung'] = { emoji = '🧂', important = true, threshold = 50_000_000 },
-    ['Dragon Cannelloni'] = { emoji = '🐲', important = true, threshold = 250_000_000 },
-    ['La Supreme Combinasion'] = { emoji = '🔫', important = true, threshold = 40_000_000 },
-    ['Ketupat Kepat'] = { emoji = '🍏', important = false, threshold = 150_000_000 },
-    ['Strawberry Elephant'] = { emoji = '🐘', important = true, threshold = 250_000_000 },
-    ['Spaghetti Tualetti'] = { emoji = '🚽', important = false, threshold = 420_000_000 },
-    ['Ketchuru and Musturu'] = { emoji = '🍾', important = true, threshold = 30_000_000 },
-    ['La Secret Combinasion'] = { emoji = '❓', important = true, threshold = 125_000_000 },
-    ['Tralaledon'] = { emoji = '🦈', important = true, threshold = 20_000_000 },
-    ['La Extinct Grande'] = { emoji = '🩻', important = false, threshold = 250_000_000 },
-    ['Tictac Sahur'] = { emoji = '🕰️', important = true, threshold = 22_000_000 },
-    ['Celularcini Viciosini'] = { emoji = '📞', important = true, threshold = 170_000_000 },
-    ['Los Primos'] = { emoji = '🙆‍♂️', important = true, threshold = 20_000_000 },
-    ['Tang Tang Keletang'] = { emoji = '📢', important = false, threshold = 190_000_000 },
-    ['Money Money Puggy'] = { emoji = '🐶', important = false, threshold = 300_000_000 },
-    ['Burguro And Fryuro'] = { emoji = '🍔', important = true, threshold = 150_000_000 },
-    ['Chillin Chili'] = { emoji = '🌶', important = true, threshold = 160_000_000 },
-    ['Spooky and Pumpky'] = { emoji = '🎃', important = true, threshold = 80_000_000 },
-    ['Mieteteira Bicicleteira'] = { emoji = '☠️', important = false, threshold = 700_000_000 },
-    ['Meowl'] = { emoji = '🐈', important = true, threshold = 200_000_000 },
-    ['Chipso and Queso'] = { emoji = '🧀', important = false, threshold = 500_000_000 },
-    ['La Casa Boo'] = { emoji = '👁‍🗨', important = true, threshold = 100_000_000 },
-    ['Headless Horseman'] = { emoji = '🐴', important = true, threshold = 120_000_000 },
-    ['Los Tacoritas'] = { emoji = '💀', important = true, threshold = 100_000_000 },
-    ['La Taco Combinasion'] = { emoji = '👒', important = true, threshold = 270_000_000 },
-    ['Cooki and Milki'] = { emoji = '🍪', important = true, threshold = 140_000_000 },
-    ['Fragrama and Chocrama'] = { emoji = '🍫', important = true, threshold = 80_000_000 },
-    ['Los Spaghettis'] = { emoji = '🍝', important = true, threshold = 200_000_000 },
-    ['Orcaledon'] = { emoji = '🐭', important = true, threshold = 240_000_000 },
-    ['W or L'] = { emoji = '🏆', important = true, threshold = 500_000_000 }, -- Высокий порог для редкого объекта
-    ['Lavadorito Spinito'] = { emoji = '📺', important = true, threshold = 30_000_000 },
-    ['Gobblino Uniciclino'] = { emoji = '🕊️', important = false, threshold = 300_000_000 },
-    ['Fishino Clownino'] = { emoji = '🐠', important = true, threshold = 10_000_000 },
-    ['La Ginger Sekolah'] = { emoji = '🎄', important = true, threshold = nil },
-    ['Los Planitos'] = { emoji = '🪐', important = false, threshold = 310_000_000 },
-    ['Guest 666'] = { emoji = '👿', important = true, threshold = 6_600_000 },
-    ['Capitano Moby'] = { emoji = '🛥️', important = true, threshold = 100_000_000 },
+    ['Garama and Madundung'] = { emoji = '🍝', threshold = 50000000 },
+    ['Dragon Cannelloni'] = { emoji = '🐲', threshold = 50000000 },
+    ['Nuclearo Dinossauro'] = { emoji = '🦕', threshold = 1000000000 },
+    ['Esok Sekolah'] = { emoji = '🏠', threshold = 300000000 },
+    ['La Supreme Combinasion'] = { emoji = '🔫', threshold = 10000000 },
+    ['Ketupat Kepat'] = { emoji = '🍏', threshold = 35000000 },
+    ['Strawberry Elephant'] = { emoji = '🐘', threshold = 10000000 },
+    ['Spaghetti Tualetti'] = { emoji = '🚽', threshold = 300000000 },
+    ['Ketchuru and Musturu'] = { emoji = '🍾', threshold = 10000000 },
+    ['Tralaledon'] = { emoji = '🦈', threshold = 10000000 },
+    ['Tictac Sahur'] = { emoji = '🕰️', threshold = 10000000 },
+    ['Los Primos'] = { emoji = '🙆‍♂️', threshold = 10000000 },
+    ['Tang Tang Keletang'] = { emoji = '📢', threshold = 100000000 },
+    ['Money Money Puggy'] = { emoji = '🐶', threshold = 200000000 },
+    ['Burguro And Fryuro'] = { emoji = '🍔', threshold = 10000000 },
+    ['Chillin Chili'] = { emoji = '🌶', threshold = 150000000 },
+    ['La Secret Combinasion'] = { emoji = '❓', threshold = 10000000 },
+    ['Eviledon'] = { emoji = '👹', threshold = 200000000 },
+    ['Spooky and Pumpky'] = { emoji = '🎃', threshold = 10000000 },
+    ['La Spooky Grande'] = { emoji = '👻', threshold = 170000000 },
+    ['Meowl'] = { emoji = '🐈', threshold = 10000000 },
+    ['Chipso and Queso'] = { emoji = '🧀', threshold = 10000000 },
+    ['La Casa Boo'] = { emoji = '👁‍🗨', threshold = 10000000 },
+    ['Headless Horseman'] = { emoji = '🐴', threshold = 10000000 },
+    ['Los Tacoritas'] = { emoji = '🚴', threshold = 10000000 },
+    ['Capitano Moby'] = { emoji = '🚢', threshold = 10000000 },
+    ['La Taco Combinasion'] = { emoji = '👒', threshold = 400000000 },
+    ['Cooki and Milki'] = { emoji = '🍪', threshold = 10000000 },
+    ['Los Puggies'] = { emoji = '🦮', threshold = 225000000 },
+    ['Orcaledon'] = { emoji = '🐡', threshold = 10000000 },
+    ['Fragrama and Chocrama'] = { emoji = '🍦', threshold = 10000000 },
+    ['Guest 666'] = { emoji = '㊙️', threshold = 10000000 },
+    ['Los Primos'] = { emoji = '🙆‍♂️', threshold = 250000000 },
+    ['Los Bros'] = { emoji = '📱', threshold = 300000000 },
+    ['Lavadorito Spinito'] = { emoji = '📺', threshold = 10000000 },
+    ['W or L'] = { emoji = '🪜', threshold = 100000000 },
+    ['Fishino Clownino'] = { emoji = '🤡', threshold = 10000000 },
+    ['Mieteteira Bicicleteira'] = { emoji = '💄', threshold = 400000000 },
+    ['La Extinct Grande'] = { emoji = '☠️', threshold = 170000000 },
+    ['Los Chicleteiras'] = { emoji = '🍼', threshold = 140000000 },
+    ['Las Sis'] = { emoji = '☕️', threshold = 350000000 },
+    ['Tacorita Bicicleta'] = { emoji = '🌮', threshold = 100000000 },
+    ['Los Mobilis'] = { emoji = '📱', threshold = 350000000 },
+    ['La Ginger Sekolah'] = { emoji = '🎄', threshold = 10000000 },
+    ['Christmas Chicleteira'] = { emoji = '🛷', threshold = 10000000 },
+    ['La Jolly Grande'] = { emoji = '☃️', threshold = 10000000 },
+    ['Ginger'] = { emoji = '🧸', threshold = 10000000 },
 }
 
--- Функция для определения, нужно ли показывать объект
-local function shouldShow(name, gen)
-    local cfg = OBJECTS[name]
-    if not cfg then return false end
-    
-    -- Если объект важный, показываем всегда
-    if cfg.important then
-        return true
-    end
-    
-    -- Проверяем индивидуальный порог
-    if cfg.threshold then
-        return gen >= cfg.threshold
-    else
-        -- Используем глобальный порог
-        return gen >= GLOBAL_INCOME_THRESHOLD
-    end
-end
-
--- Функция для получения порога объекта (для отображения в уведомлении)
-local function getThresholdForDisplay(name)
-    local cfg = OBJECTS[name]
-    if not cfg then return GLOBAL_INCOME_THRESHOLD end
-    
-    if cfg.threshold then
-        return cfg.threshold
-    else
-        return GLOBAL_INCOME_THRESHOLD
-    end
-end
-
--- 💰 ПАРСЕР ДОХОДА: принимаем только строки, оканчивающиеся на "/s"
+-- 💰 ПАРСЕР ДОХОДА
 local function parseGenerationText(s)
     if type(s) ~= 'string' or s == '' then
         return nil
@@ -388,99 +365,48 @@ local function sendDiscordNotification(filteredObjects)
     local placeId = game.PlaceId
 
     if #filteredObjects == 0 then
-        print('🔍 Важных объектов не найдено')
+        print('🔍 Объектов выше порога не найдено')
         return
     end
 
-    -- Сортируем по важности и доходу
-    local important, regular = {}, {}
-    for _, obj in ipairs(filteredObjects) do
-        local cfg = OBJECTS[obj.name]
-        if cfg and cfg.important then
-            table.insert(important, obj)
-        else
-            table.insert(regular, obj)
-        end
-    end
-
-    table.sort(important, function(a, b)
-        return a.gen > b.gen
-    end)
-    table.sort(regular, function(a, b)
+    -- Сортируем по доходу (убывание)
+    table.sort(filteredObjects, function(a, b)
         return a.gen > b.gen
     end)
 
-    local sorted = {}
-    for _, obj in ipairs(important) do
-        table.insert(sorted, obj)
-    end
-    for _, obj in ipairs(regular) do
-        table.insert(sorted, obj)
-    end
-
-    -- Формируем список
+    -- Формируем красивый список
     local objectsList = {}
-    for i = 1, math.min(10, #sorted) do
-        local obj = sorted[i]
+    for i = 1, math.min(15, #filteredObjects) do
+        local obj = filteredObjects[i]
         local cfg = OBJECTS[obj.name] or {}
         local emoji = cfg.emoji or '💰'
-        local mark = cfg.important and '⭐ ' or ''
-        local threshold = getThresholdForDisplay(obj.name)
-        local thresholdMet = obj.gen >= threshold
+        local threshold = cfg.threshold or DEFAULT_THRESHOLD
         
         table.insert(
             objectsList,
             string.format(
-                '%s%s **%s** (%s) | Порог: %s %s',
-                mark,
+                '%s **%s** (%s) - порог: %s',
                 emoji,
                 obj.name,
                 formatIncomeNumber(obj.gen),
-                formatIncomeNumber(threshold),
-                thresholdMet and '✅' or '❌'
+                formatIncomeNumber(threshold)
             )
         )
     end
     local objectsText = table.concat(objectsList, '\n')
 
-    -- Статистика по порогам
-    local thresholdStats = {
-        above = 0,
-        below = 0,
-        important = 0
-    }
-    
-    for _, obj in ipairs(filteredObjects) do
-        local cfg = OBJECTS[obj.name] or {}
-        local threshold = getThresholdForDisplay(obj.name)
-        
-        if cfg.important then
-            thresholdStats.important = thresholdStats.important + 1
-        end
-        
-        if obj.gen >= threshold then
-            thresholdStats.above = thresholdStats.above + 1
-        else
-            thresholdStats.below = thresholdStats.below + 1
-        end
-    end
-
+    -- Телепорт команда
     local teleportText = string.format(
         "`local ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')`",
         placeId,
         jobId
     )
 
-    local copyButtonText = string.format(
-        "📋 Нажмите чтобы скопировать JobId: ```%s```",
-        jobId
-    )
-
     local payload = {
-        username = '🎯 Brainrot Scanner v2.1',
+        username = '🎯 Brainrot Scanner',
         embeds = {
             {
-                title = '💎 Найдены ценные объекты в Steal a brainrot!',
+                title = '💎 Найдены объекты выше порога!',
                 color = 0x2f3136,
                 fields = {
                     {
@@ -489,32 +415,20 @@ local function sendDiscordNotification(filteredObjects)
                         inline = false,
                     },
                     {
-                        name = '📊 Статистика:',
-                        value = string.format('✅ Выше порога: %d\n❌ Ниже порога: %d\n⭐ Важных: %d',
-                            thresholdStats.above, thresholdStats.below, thresholdStats.important),
-                        inline = false,
-                    },
-                    {
                         name = '💰 Объекты:',
                         value = objectsText,
                         inline = false,
                     },
                     {
-                        name = '🚀 Телепорт команда:',
+                        name = '🚀 Телепорт:',
                         value = teleportText,
-                        inline = false,
-                    },
-                    {
-                        name = '📋 Скопировать JobId',
-                        value = copyButtonText,
                         inline = false,
                     },
                 },
                 footer = {
                     text = string.format(
-                        'Найдено: %d объектов • Глобальный порог: %s • %s',
+                        'Найдено: %d объектов • %s',
                         #filteredObjects,
-                        formatIncomeNumber(GLOBAL_INCOME_THRESHOLD),
                         os.date('%H:%M:%S')
                     ),
                 },
@@ -549,32 +463,32 @@ local function scanAndNotify()
     -- Фильтрация по индивидуальным порогам
     local filtered = {}
     for _, obj in ipairs(allFound) do
-        if OBJECTS[obj.name] and shouldShow(obj.name, obj.gen) then
-            table.insert(filtered, obj)
+        local cfg = OBJECTS[obj.name]
+        if cfg and obj.gen then
+            local threshold = cfg.threshold or DEFAULT_THRESHOLD
+            if obj.gen >= threshold then
+                table.insert(filtered, obj)
+            end
         end
     end
 
-    -- Вывод в консоль с информацией о порогах
+    -- Вывод в консоль
     print('Найдено всего объектов:', #allFound)
-    print('Отфильтровано по порогам:', #filtered)
+    print('Выше порога:', #filtered)
 
     for _, obj in ipairs(filtered) do
         local cfg = OBJECTS[obj.name] or {}
         local emoji = cfg.emoji or '💰'
-        local mark = cfg.important and '⭐ ' or ''
-        local threshold = getThresholdForDisplay(obj.name)
-        local thresholdMet = obj.gen >= threshold
+        local threshold = cfg.threshold or DEFAULT_THRESHOLD
         
         print(
             string.format(
-                '%s%s %s: %s | Порог: %s %s (%s)',
-                mark,
+                '%s %s: %s (%s) - порог: %s',
                 emoji,
                 obj.name,
                 formatIncomeNumber(obj.gen),
-                formatIncomeNumber(threshold),
-                thresholdMet and '✅' or '❌',
-                obj.location or 'Unknown'
+                obj.location or 'Unknown',
+                formatIncomeNumber(threshold)
             )
         )
     end
@@ -583,14 +497,22 @@ local function scanAndNotify()
     if #filtered > 0 then
         sendDiscordNotification(filtered)
     else
-        print('🔍 Нет объектов для уведомления')
+        print('🔍 Нет объектов выше порога')
     end
 end
 
 -- 🚀 ЗАПУСК
-print('🎯 === BRAINROT INCOME SCANNER v2.1 ЗАПУЩЕН ===')
-print('⚙️  Индивидуальные пороги включены')
-print('💰 Глобальный порог:', formatIncomeNumber(GLOBAL_INCOME_THRESHOLD))
+print('🎯 === BRAINROT INCOME SCANNER (ИНДИВИДУАЛЬНЫЕ ПОРОГИ) ===')
+print('💡 Каждый объект имеет свой порог уведомления')
+print('⚙️  Настрой пороги в разделе OBJECTS')
+
+-- Показываем текущие пороги
+print('\n📊 ТЕКУЩИЕ ПОРОГИ:')
+for name, cfg in pairs(OBJECTS) do
+    print(string.format('   %s %s: %s', cfg.emoji, name, formatIncomeNumber(cfg.threshold)))
+end
+print('')
+
 scanAndNotify()
 
 -- ⌨️ ПОВТОР ПО КЛАВИШЕ F
