@@ -69,7 +69,7 @@ local OBJECTS = {
     ['Gobblino Uniciclino'] = { emoji = '🕊️', important = false },
     ['Fishino Clownino'] = { emoji = '🐠', important = true },
     ['La Ginger Sekolah'] = { emoji = '🎄', important = true },
-    ['Los Planitos'] = { emoji = '🪐', important = true },
+    ['Los Planitos'] = { emoji = '🪐', important = false },
     ['Guest 666'] = { emoji = '👿', important = true },
     ['Capitano Moby'] = { emoji = '🛥️', important = true },
     
