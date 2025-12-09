@@ -8,7 +8,7 @@ local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
 local INCOME_THRESHOLD = 100_000_000 -- 50M/s минимум для уведомления
-local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1447621488831369367/qmn45cMh_W6IvODOPhUs12-0yWwFBbHrEZA6HP2n6l7A5sW360zkweSPHEa9Tcmpmerl'
+local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1447921539919122524/zdXmov90OjrkWZAfGp8plcNej5TWNgg8GHCVuPDFhYwB55D9SWmnMVDHe6O8_5fK_lnl'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
