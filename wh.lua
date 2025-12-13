@@ -57,7 +57,7 @@ local OBJECTS = {
     ['Las Sis'] = { emoji = '☕️', threshold = 350000000 },
     ['Tacorita Bicicleta'] = { emoji = '🌮', threshold = 100000000 },
     ['Los Mobilis'] = { emoji = '📱', threshold = 400000000 },
-    ['La Ginger Sekolah'] = { emoji = '🎄', threshold = 10000000 },
+    ['La Ginger Sekolah'] = { emoji = '🎄', threshold = 40000000 },
     ['Christmas Chicleteira'] = { emoji = '🛷', threshold = 10000000 },
     ['La Jolly Grande'] = { emoji = '☃️', threshold = 300000000 },
     ['Ginger'] = { emoji = '🧸', threshold = 10000000 },
