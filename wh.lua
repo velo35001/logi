@@ -8,7 +8,7 @@ local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
 local DEFAULT_THRESHOLD = 50_000_000 -- Порог по умолчанию
-local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421498530756952287/XKkzMBw09MJGBC9VMv6A5yMkE1IxYLtQWqq_bKXCiK0etZSuTvnOutuWRr9HQA7H6nv1'
+local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
@@ -57,7 +57,7 @@ local OBJECTS = {
     ['Las Sis'] = { emoji = '☕️', threshold = 350000000 },
     ['Tacorita Bicicleta'] = { emoji = '🌮', threshold = 100000000 },
     ['Los Mobilis'] = { emoji = '📱', threshold = 400000000 },
-    ['La Ginger Sekolah'] = { emoji = '🎄', threshold = 400000000 },
+    ['La Ginger Sekolah'] = { emoji = '🎄', threshold = 10000000 },
     ['Christmas Chicleteira'] = { emoji = '🛷', threshold = 10000000 },
     ['La Jolly Grande'] = { emoji = '☃️', threshold = 300000000 },
     ['Ginger'] = { emoji = '🧸', threshold = 10000000 },
@@ -534,4 +534,4 @@ end)
 
 print('💡 Нажмите F для повторного сканирования')
 print('📱 Discord webhook готов к отправке уведомлений')
-loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/bottik.lua"))()
