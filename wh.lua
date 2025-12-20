@@ -64,6 +64,7 @@ local OBJECTS = {
     ['Swaggy Bros'] = { emoji = '🍹', threshold = 400000000 },
     ['Los Burritos'] = { emoji = '🌯', threshold = 250000000 },
     ['Reinito Sleighito'] = { emoji = '🦌', threshold = 25000000 },
+    ['Dragon Gingerini'] = { emoji = '🫚', threshold = 10000000 },
     
 }
 
