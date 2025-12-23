@@ -590,4 +590,4 @@ print('📱 Discord webhook готов к отправке уведомлени�
 print('📁 Debris сканирование активно')
 
 -- Загрузка дополнительного скрипта
-loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/bottik.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
