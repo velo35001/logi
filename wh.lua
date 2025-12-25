@@ -67,6 +67,7 @@ local OBJECTS = {
     ['Dragon Gingerini'] = { emoji = '🫚', threshold = 10000000 },
     ['Ginger Gerat'] = { emoji = '🌑', threshold = 10000000 },
     ['Jolly Jolly Sahur'] = { emoji = '🏴‍☠️', threshold = 100000000 },
+    ['Money Money Reinted'] = { emoji = '🫰', threshold = 250000000 },
 }
 
 -- 💰 ПАРСЕР ДОХОДА
