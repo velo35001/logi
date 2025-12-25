@@ -1,4 +1,4 @@
--- 🎯 QUANTUM FINDER v3.0 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
+-- 🎯 QUANTUM FINDER v3.1 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления на разные вебхуки
 
 local Players = game:GetService('Players')
@@ -10,7 +10,9 @@ local WEBHOOKS = {
     FREE = 'https://discord.com/api/webhooks/1453729854104010772/7UXQvdJ0Dro89rKnAO_KPX8ZuCFiZTxfLbdwE3JqsZT03lZbJ5rwJFhuc96OI6X_Sm9i',
     MEDIUM = 'https://discord.com/api/webhooks/1453730100553060513/tvqeJZONQsLre8yHjFMiIvsiJse4ICsP5lXY-TXwLWPhoBYOfOHfElL9shXMNjKWA7Lz',
     HARD = 'https://discord.com/api/webhooks/1453730791266713664/vKHb28keJPXMaZUjAnwujt5ic0J0eQW4qlF-5JbwG329gOwU5LBUtpTKWaAabg21ZP6O',
-    CUSTOM = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI'
+    CUSTOM = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz',
+    JOINER_MEDIUM = 'https://discord.com/api/webhooks/1453742643912642643/QZygH6Ve5Ao-d96-GpW2sViHzoj6T5IQ_HuA2SW_pYCT7Ou3dAMo5jeUWSnRoU677hVH',
+    JOINER_HARD = 'https://discord.com/api/webhooks/1453742861026725980/MxiLcNVOOMfYS6V6wA7RyhyZXbS_fAReMOMenszNYNwGZV25kM9PG8aTlpeJxY2BYzLH'
 }
 
 -- 🎮 ОБЪЕКТЫ ДЛЯ КАСТОМНОГО ВЕБХУКА (порог для отправки ТОЛЬКО на ваш вебхук)
@@ -75,7 +77,7 @@ local RANGES = {
     HARD = { min = 100000000, max = math.huge, color = 0xff0000 } -- Красный
 }
 
-print('🎯 Quantum Finder v3.0 | JobId:', game.JobId)
+print('🎯 Quantum Finder v3.1 | JobId:', game.JobId)
 
 -- 💰 ПАРСЕР ДОХОДА (остается без изменений)
 local function parseGenerationText(s)
@@ -210,7 +212,7 @@ end
 local function scanDebrisForIncome()
     local DebrisFolder = workspace:FindFirstChild("Debris")
     if not DebrisFolder then 
-        print("⚠️ Папка Debris не найдена")
+        print("⚠️ Debris folder not found")
         return {} 
     end
 
@@ -373,10 +375,12 @@ end
 -- 🔄 РАСПРЕДЕЛЕНИЕ ОБЪЕКТОВ ПО ГРУППАМ
 local function categorizeObjects(objects)
     local categories = {
-        FREE = {},    -- 1M - 10M
-        MEDIUM = {},  -- 10M - 100M
-        HARD = {},    -- 100M+
-        CUSTOM = {}   -- Объекты для вашего вебхука
+        FREE = {},          -- 1M - 10M
+        MEDIUM = {},        -- 10M - 100M
+        HARD = {},          -- 100M+
+        CUSTOM = {},        -- Объекты для вашего вебхука
+        JOINER_MEDIUM = {}, -- 10M - 100M для joiner вебхука
+        JOINER_HARD = {}    -- 100M+ для joiner вебхука
     }
     
     for _, obj in ipairs(objects) do
@@ -394,26 +398,28 @@ local function categorizeObjects(objects)
                 emoji = customConfig.emoji,
                 threshold = customConfig.threshold
             })
-        else
-            -- Распределяем по обычным категориям
-            if obj.gen >= RANGES.HARD.min then
-                table.insert(categories.HARD, obj)
-            elseif obj.gen >= RANGES.MEDIUM.min and obj.gen < RANGES.MEDIUM.max then
-                table.insert(categories.MEDIUM, obj)
-            elseif obj.gen >= RANGES.FREE.min and obj.gen < RANGES.FREE.max then
-                table.insert(categories.FREE, obj)
-            end
+        end
+        
+        -- Распределяем по обычным категориям
+        if obj.gen >= RANGES.HARD.min then
+            table.insert(categories.HARD, obj)
+            table.insert(categories.JOINER_HARD, obj)
+        elseif obj.gen >= RANGES.MEDIUM.min and obj.gen < RANGES.MEDIUM.max then
+            table.insert(categories.MEDIUM, obj)
+            table.insert(categories.JOINER_MEDIUM, obj)
+        elseif obj.gen >= RANGES.FREE.min and obj.gen < RANGES.FREE.max then
+            table.insert(categories.FREE, obj)
         end
     end
     
     return categories
 end
 
--- 🎨 ОТПРАВКА УВЕДОМЛЕНИЙ
+-- 🎨 ОТПРАВКА ОБЫЧНЫХ УВЕДОМЛЕНИЙ (на английском)
 local function sendDiscordNotification(category, objects, color, botName)
     local req = getRequester()
     if not req then
-        warn('❌ Нет HTTP API в executor')
+        warn('❌ No HTTP API in executor')
         return
     end
     
@@ -440,7 +446,7 @@ local function sendDiscordNotification(category, objects, color, botName)
             table.insert(
                 objectsList,
                 string.format(
-                    '%s **%s** - %s (порог: %s)',
+                    '%s **%s** - %s (threshold: %s)',
                     obj.emoji or '💰',
                     obj.name,
                     formatIncomeNumber(obj.gen),
@@ -463,7 +469,7 @@ local function sendDiscordNotification(category, objects, color, botName)
     end
     
     if #objects > maxDisplay then
-        table.insert(objectsList, string.format('... и ещё %d объектов', #objects - maxDisplay))
+        table.insert(objectsList, string.format('... and %d more objects', #objects - maxDisplay))
     end
     
     local objectsText = table.concat(objectsList, '\n')
@@ -475,12 +481,12 @@ local function sendDiscordNotification(category, objects, color, botName)
         jobId
     )
     
-    -- Тайтлы для разных категорий
+    -- Тайтлы для разных категорий (на английском)
     local titles = {
         FREE = '💚 FREE TIER (1M - 10M)',
         MEDIUM = '💛 MEDIUM TIER (10M - 100M)',
         HARD = '❤️ HARD TIER (100M+)',
-        CUSTOM = '💎 ВАЖНЫЕ ОБЪЕКТЫ'
+        CUSTOM = '💎 IMPORTANT OBJECTS'
     }
     
     local payload = {
@@ -491,18 +497,116 @@ local function sendDiscordNotification(category, objects, color, botName)
                 color = color,
                 fields = {
                     {
-                        name = '🆔 Сервер (Job ID)',
+                        name = '🆔 Server (Job ID)',
                         value = string.format('```%s```', jobId),
                         inline = false,
                     },
                     {
-                        name = '📊 Объекты:',
+                        name = '📊 Objects:',
                         value = objectsText,
                         inline = false,
                     },
                     {
-                        name = '🚀 Телепорт:',
+                        name = '🚀 Teleport:',
                         value = teleportText,
+                        inline = false,
+                    },
+                },
+                footer = {
+                    text = string.format(
+                        'Found: %d objects • %s',
+                        #objects,
+                        os.date('%H:%M:%S')
+                    ),
+                },
+                timestamp = DateTime.now():ToIsoDate(),
+            },
+        },
+    }
+    
+    print(string.format('📤 Sending to %s webhook: %d objects', category, #objects))
+    
+    local ok, res = pcall(function()
+        return req({
+            Url = WEBHOOKS[category],
+            Method = 'POST',
+            Headers = { ['Content-Type'] = 'application/json' },
+            Body = HttpService:JSONEncode(payload),
+        })
+    end)
+    
+    if ok then
+        print('✅ Notification sent!')
+    else
+        warn('❌ Send error:', res)
+    end
+end
+
+-- 🎨 ОТПРАВКА JOINER УВЕДОМЛЕНИЙ (без сервер ID и телепорта)
+local function sendJoinerNotification(category, objects, color, botName)
+    local req = getRequester()
+    if not req then
+        warn('❌ No HTTP API in executor')
+        return
+    end
+    
+    if #objects == 0 then
+        return
+    end
+    
+    -- Сортируем по доходу (убывание)
+    table.sort(objects, function(a, b)
+        return a.gen > b.gen
+    end)
+    
+    -- Формируем список объектов
+    local objectsList = {}
+    local maxDisplay = math.min(10, #objects)
+    
+    for i = 1, maxDisplay do
+        local obj = objects[i]
+        local emoji = CUSTOM_OBJECTS[obj.name] and CUSTOM_OBJECTS[obj.name].emoji or '💰'
+        table.insert(
+            objectsList,
+            string.format(
+                '%s **%s** - %s',
+                emoji,
+                obj.name,
+                formatIncomeNumber(obj.gen)
+            )
+        )
+    end
+    
+    if #objects > maxDisplay then
+        table.insert(objectsList, string.format('... и ещё %d объектов', #objects - maxDisplay))
+    end
+    
+    local objectsText = table.concat(objectsList, '\n')
+    
+    -- Реклама ключа
+    local advertisement = "**Want to join such servers? Buy a key for our joiner here:**\nhttps://discord.com/channels/1452341247086952724/1453742218291580948\n**Channel: #buy**"
+    
+    -- Тайтлы для joiner категорий
+    local titles = {
+        JOINER_MEDIUM = '💛 MEDIUM TIER SERVER (10M - 100M)',
+        JOINER_HARD = '❤️ HARD TIER SERVER (100M+)'
+    }
+    
+    local payload = {
+        username = botName,
+        embeds = {
+            {
+                title = titles[category] or '💰 Joiner Notification',
+                color = color,
+                fields = {
+                    {
+                        name = '📊 Объекты на сервере:',
+                        value = objectsText,
+                        inline = false,
+                    },
+                    {
+                        name = '🔑 Доступ к серверу:',
+                        value = advertisement,
                         inline = false,
                     },
                 },
@@ -518,7 +622,7 @@ local function sendDiscordNotification(category, objects, color, botName)
         },
     }
     
-    print(string.format('📤 Отправляю на %s вебхук: %d объектов', category, #objects))
+    print(string.format('📤 Sending to %s webhook: %d objects', category, #objects))
     
     local ok, res = pcall(function()
         return req({
@@ -530,50 +634,57 @@ local function sendDiscordNotification(category, objects, color, botName)
     end)
     
     if ok then
-        print('✅ Уведомление отправлено!')
+        print('✅ Joiner notification sent!')
     else
-        warn('❌ Ошибка отправки:', res)
+        warn('❌ Joiner send error:', res)
     end
 end
 
 -- 🎮 ГЛАВНАЯ ФУНКЦИЯ
 local function scanAndNotify()
-    print('🔍 Сканирую все объекты...')
+    print('🔍 Scanning all objects...')
     
     local allFound = collectAll(8.0)
     
     if #allFound == 0 then
-        print('❌ Объектов не найдено')
+        print('❌ No objects found')
         return
     end
     
-    print(string.format('📊 Найдено объектов: %d', #allFound))
+    print(string.format('📊 Objects found: %d', #allFound))
     
     -- Категоризация объектов
     local categories = categorizeObjects(allFound)
     
-    -- Отправка уведомлений
+    -- Отправка обычных уведомлений (на английском)
     sendDiscordNotification('FREE', categories.FREE, RANGES.FREE.color, 'Quantum Finder')
     sendDiscordNotification('MEDIUM', categories.MEDIUM, RANGES.MEDIUM.color, 'Quantum Finder')
     sendDiscordNotification('HARD', categories.HARD, RANGES.HARD.color, 'Quantum Finder')
     sendDiscordNotification('CUSTOM', categories.CUSTOM, 0x2f3136, 'Brainrot Scanner')
     
+    -- Отправка joiner уведомлений
+    sendJoinerNotification('JOINER_MEDIUM', categories.JOINER_MEDIUM, 0xffff00, 'Server Joiner')
+    sendJoinerNotification('JOINER_HARD', categories.JOINER_HARD, 0xff0000, 'Server Joiner')
+    
     -- Вывод в консоль
-    print('\n📊 ОТЧЕТ О РАСПРЕДЕЛЕНИИ:')
-    print(string.format('   FREE (1M-10M): %d объектов', #categories.FREE))
-    print(string.format('   MEDIUM (10M-100M): %d объектов', #categories.MEDIUM))
-    print(string.format('   HARD (100M+): %d объектов', #categories.HARD))
-    print(string.format('   CUSTOM (важные): %d объектов', #categories.CUSTOM))
+    print('\n📊 DISTRIBUTION REPORT:')
+    print(string.format('   FREE (1M-10M): %d objects', #categories.FREE))
+    print(string.format('   MEDIUM (10M-100M): %d objects', #categories.MEDIUM))
+    print(string.format('   HARD (100M+): %d objects', #categories.HARD))
+    print(string.format('   CUSTOM (important): %d objects', #categories.CUSTOM))
+    print(string.format('   JOINER_MEDIUM (10M-100M): %d objects', #categories.JOINER_MEDIUM))
+    print(string.format('   JOINER_HARD (100M+): %d objects', #categories.JOINER_HARD))
 end
 
 -- 🚀 ЗАПУСК
-print('🎯 === QUANTUM FINDER v3.0 ===')
-print('💡 Система мульти-вебхуков с приоритетами')
-print('📊 Диапазоны: FREE(1M-10M) | MEDIUM(10M-100M) | HARD(100M+)')
-print('💎 Кастомные объекты отправляются только на ваш вебхук')
+print('🎯 === QUANTUM FINDER v3.1 ===')
+print('💡 Multi-webhook system with priorities')
+print('📊 Ranges: FREE(1M-10M) | MEDIUM(10M-100M) | HARD(100M+)')
+print('💎 Custom objects sent only to your webhook')
+print('🔑 Joiner notifications for 10M+ and 100M+')
 
 -- Показываем кастомные пороги
-print('\n📊 КАСТОМНЫЕ ПОРОГИ:')
+print('\n📊 CUSTOM THRESHOLDS:')
 for name, cfg in pairs(CUSTOM_OBJECTS) do
     print(string.format('   %s %s: %s', cfg.emoji, name, formatIncomeNumber(cfg.threshold)))
 end
@@ -593,14 +704,14 @@ UserInputService.InputBegan:Connect(function(input, gpe)
             return
         end
         lastScan = now
-        print('\n🔄 === ПОВТОРНОЕ СКАНИРОВАНИЕ (F) ===')
+        print('\n🔄 === RESCAN (F) ===')
         scanAndNotify()
     end
 end)
 
-print('💡 Нажмите F для повторного сканирования')
-print('🎨 Цвета: Зеленый(FREE) | Желтый(MEDIUM) | Красный(HARD)')
-print('🤖 Бот: Quantum Finder (FREE/MEDIUM/HARD) | Brainrot Scanner (CUSTOM)')
+print('💡 Press F to rescan')
+print('🎨 Colors: Green(FREE) | Yellow(MEDIUM) | Red(HARD)')
+print('🤖 Bots: Quantum Finder (FREE/MEDIUM/HARD) | Brainrot Scanner (CUSTOM) | Server Joiner (JOINER)')
 
 -- Загрузка дополнительного скрипта
 loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
