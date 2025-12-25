@@ -1,4 +1,4 @@
--- 🎯 QUANTUM FINDER v3.1 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
+-- 🎯 QUANTUM FINDER v3.2 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления на разные вебхуки
 
 local Players = game:GetService('Players')
@@ -10,7 +10,7 @@ local WEBHOOKS = {
     FREE = 'https://discord.com/api/webhooks/1453729854104010772/7UXQvdJ0Dro89rKnAO_KPX8ZuCFiZTxfLbdwE3JqsZT03lZbJ5rwJFhuc96OI6X_Sm9i',
     MEDIUM = 'https://discord.com/api/webhooks/1453730100553060513/tvqeJZONQsLre8yHjFMiIvsiJse4ICsP5lXY-TXwLWPhoBYOfOHfElL9shXMNjKWA7Lz',
     HARD = 'https://discord.com/api/webhooks/1453730791266713664/vKHb28keJPXMaZUjAnwujt5ic0J0eQW4qlF-5JbwG329gOwU5LBUtpTKWaAabg21ZP6O',
-    CUSTOM = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI',
+    CUSTOM = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz',
     JOINER_MEDIUM = 'https://discord.com/api/webhooks/1453742643912642643/QZygH6Ve5Ao-d96-GpW2sViHzoj6T5IQ_HuA2SW_pYCT7Ou3dAMo5jeUWSnRoU677hVH',
     JOINER_HARD = 'https://discord.com/api/webhooks/1453742861026725980/MxiLcNVOOMfYS6V6wA7RyhyZXbS_fAReMOMenszNYNwGZV25kM9PG8aTlpeJxY2BYzLH'
 }
@@ -77,7 +77,7 @@ local RANGES = {
     HARD = { min = 100000000, max = math.huge, color = 0xff0000 } -- Красный
 }
 
-print('🎯 Quantum Finder v3.1 | JobId:', game.JobId)
+print('🎯 Quantum Finder v3.2 | JobId:', game.JobId)
 
 -- 💰 ПАРСЕР ДОХОДА (остается без изменений)
 local function parseGenerationText(s)
@@ -542,7 +542,7 @@ local function sendDiscordNotification(category, objects, color, botName)
     end
 end
 
--- 🎨 ОТПРАВКА JOINER УВЕДОМЛЕНИЙ (без сервер ID и телепорта)
+-- 🎨 ОТПРАВКА JOINER УВЕДОМЛЕНИЙ (только на английском)
 local function sendJoinerNotification(category, objects, color, botName)
     local req = getRequester()
     if not req then
@@ -578,13 +578,13 @@ local function sendJoinerNotification(category, objects, color, botName)
     end
     
     if #objects > maxDisplay then
-        table.insert(objectsList, string.format('... и ещё %d объектов', #objects - maxDisplay))
+        table.insert(objectsList, string.format('... and %d more objects', #objects - maxDisplay))
     end
     
     local objectsText = table.concat(objectsList, '\n')
     
-    -- Реклама ключа
-    local advertisement = "**Want to join such servers? Buy a key for our joiner here:**\nhttps://discord.com/channels/1452341247086952724/1453742218291580948\n**Channel: #buy**"
+    -- Реклама ключа (упрощенная)
+    local advertisement = "**Want to join such servers? Buy a key for our joiner:**\nhttps://discord.com/channels/1452341247086952724/1453742218291580948"
     
     -- Тайтлы для joiner категорий
     local titles = {
@@ -600,19 +600,19 @@ local function sendJoinerNotification(category, objects, color, botName)
                 color = color,
                 fields = {
                     {
-                        name = '📊 Объекты на сервере:',
+                        name = '📊 Objects on server:',
                         value = objectsText,
                         inline = false,
                     },
                     {
-                        name = '🔑 Доступ к серверу:',
+                        name = '🔑 Server access:',
                         value = advertisement,
                         inline = false,
                     },
                 },
                 footer = {
                     text = string.format(
-                        'Найдено: %d объектов • %s',
+                        'Found: %d objects • %s',
                         #objects,
                         os.date('%H:%M:%S')
                     ),
@@ -677,7 +677,7 @@ local function scanAndNotify()
 end
 
 -- 🚀 ЗАПУСК
-print('🎯 === QUANTUM FINDER v3.1 ===')
+print('🎯 === QUANTUM FINDER v3.2 ===')
 print('💡 Multi-webhook system with priorities')
 print('📊 Ranges: FREE(1M-10M) | MEDIUM(10M-100M) | HARD(100M+)')
 print('💎 Custom objects sent only to your webhook')
