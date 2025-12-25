@@ -55,7 +55,7 @@ local CUSTOM_OBJECTS = {
     ['Fishino Clownino'] = { emoji = '🤡', threshold = 0 },
     ['Mieteteira Bicicleteira'] = { emoji = '💄', threshold = 400000000 },
     ['La Extinct Grande'] = { emoji = '☠️', threshold = 370000000 },
-    ['Los Chicleteiras'] = { emoji = '🍼', threshold = 99999999 },
+    ['Los Chicleteiras'] = { emoji = '🍼', threshold = 999999999 },
     ['Las Sis'] = { emoji = '☕️', threshold = 350000000 },
     ['Tacorita Bicicleta'] = { emoji = '🌮', threshold = 100000000 },
     ['Los Mobilis'] = { emoji = '📱', threshold = 400000000 },
