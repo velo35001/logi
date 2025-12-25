@@ -1,76 +1,83 @@
--- 🎯 BRAINROT INCOME SCANNER v2.0 (ИНДИВИДУАЛЬНЫЕ ПОРОГИ)
--- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
--- Запуск: автоматически при старте + по клавише F
+-- 🎯 QUANTUM FINDER v3.0 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
+-- Сканирует все объекты в Steal a Brainrot и отправляет уведомления на разные вебхуки
 
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
--- ⚙️ НАСТРОЙКИ
-local DEFAULT_THRESHOLD = 50_000_000 -- Порог по умолчанию
-local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI'
+-- ⚙️ ВЕБХУКИ
+local WEBHOOKS = {
+    FREE = 'https://discord.com/api/webhooks/1453729854104010772/7UXQvdJ0Dro89rKnAO_KPX8ZuCFiZTxfLbdwE3JqsZT03lZbJ5rwJFhuc96OI6X_Sm9i',
+    MEDIUM = 'https://discord.com/api/webhooks/1453730100553060513/tvqeJZONQsLre8yHjFMiIvsiJse4ICsP5lXY-TXwLWPhoBYOfOHfElL9shXMNjKWA7Lz',
+    HARD = 'https://discord.com/api/webhooks/1453730791266713664/vKHb28keJPXMaZUjAnwujt5ic0J0eQW4qlF-5JbwG329gOwU5LBUtpTKWaAabg21ZP6O',
+    CUSTOM = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
+}
 
-print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
-
--- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ИНДИВИДУАЛЬНЫМИ ПОРОГАМИ
-local OBJECTS = {
-    ['Garama and Madundung'] = { emoji = '🍝', threshold = 50000000 },
-    ['Dragon Cannelloni'] = { emoji = '🐲', threshold = 50000000 },
-    ['Nuclearo Dinossauro'] = { emoji = '🦕', threshold = 1000000000 },
-    ['Esok Sekolah'] = { emoji = '🏠', threshold = 300000000 },
-    ['La Supreme Combinasion'] = { emoji = '🔫', threshold = 10000000 },
-    ['Ketupat Kepat'] = { emoji = '🍏', threshold = 35000000 },
-    ['Strawberry Elephant'] = { emoji = '🐘', threshold = 10000000 },
-    ['Spaghetti Tualetti'] = { emoji = '🚽', threshold = 300000000 },
-    ['Ketchuru and Musturu'] = { emoji = '🍾', threshold = 10000000 },
-    ['Tralaledon'] = { emoji = '🦈', threshold = 10000000 },
-    ['Tictac Sahur'] = { emoji = '🕰️', threshold = 10000000 },
-    ['Los Primos'] = { emoji = '🙆‍♂️', threshold = 10000000 },
-    ['Tang Tang Keletang'] = { emoji = '📢', threshold = 100000000 },
-    ['Money Money Puggy'] = { emoji = '🐶', threshold = 200000000 },
-    ['Burguro And Fryuro'] = { emoji = '🍔', threshold = 10000000 },
-    ['Chillin Chili'] = { emoji = '🌶', threshold = 150000000 },
-    ['La Secret Combinasion'] = { emoji = '❓', threshold = 10000000 },
-    ['Eviledon'] = { emoji = '👹', threshold = 200000000 },
-    ['Spooky and Pumpky'] = { emoji = '🎃', threshold = 10000000 },
-    ['La Spooky Grande'] = { emoji = '👻', threshold = 170000000 },
-    ['Meowl'] = { emoji = '🐈', threshold = 10000000 },
-    ['Chipso and Queso'] = { emoji = '🧀', threshold = 10000000 },
-    ['La Casa Boo'] = { emoji = '👁‍🗨', threshold = 10000000 },
-    ['Headless Horseman'] = { emoji = '🐴', threshold = 10000000 },
-    ['Los Tacoritas'] = { emoji = '🚴', threshold = 10000000 },
-    ['Capitano Moby'] = { emoji = '🚢', threshold = 10000000 },
+-- 🎮 ОБЪЕКТЫ ДЛЯ КАСТОМНОГО ВЕБХУКА (порог для отправки ТОЛЬКО на ваш вебхук)
+local CUSTOM_OBJECTS = {
+    ['Garama and Madundung'] = { emoji = '🍝', threshold = 0 },
+    ['Dragon Cannelloni'] = { emoji = '🐲', threshold = 0 },
+    ['Nuclearo Dinossauro'] = { emoji = '🦕', threshold = 240000000 },
+    ['Esok Sekolah'] = { emoji = '🏠', threshold = 400000000 },
+    ['La Supreme Combinasion'] = { emoji = '🔫', threshold = 0 },
+    ['Ketupat Kepat'] = { emoji = '🍏', threshold = 180000000 },
+    ['Strawberry Elephant'] = { emoji = '🐘', threshold = 0 },
+    ['Spaghetti Tualetti'] = { emoji = '🚽', threshold = 500000000 },
+    ['Ketchuru and Musturu'] = { emoji = '🍾', threshold = 63000000 },
+    ['Tralaledon'] = { emoji = '🦈', threshold = 0 },
+    ['Tictac Sahur'] = { emoji = '🕰️', threshold = 150000000 },
+    ['Los Primos'] = { emoji = '🙆‍♂️', threshold = 0 },
+    ['Tang Tang Keletang'] = { emoji = '📢', threshold = 300000000 },
+    ['Money Money Puggy'] = { emoji = '🐶', threshold = 300000000 },
+    ['Burguro And Fryuro'] = { emoji = '🍔', threshold = 0 },
+    ['Chillin Chili'] = { emoji = '🌶', threshold = 200000000 },
+    ['La Secret Combinasion'] = { emoji = '❓', threshold = 187500000 },
+    ['Eviledon'] = { emoji = '👹', threshold = 300000000 },
+    ['Spooky and Pumpky'] = { emoji = '🎃', threshold = 0 },
+    ['La Spooky Grande'] = { emoji = '👻', threshold = 500000000 },
+    ['Meowl'] = { emoji = '🐈', threshold = 0 },
+    ['Chipso and Queso'] = { emoji = '🧀', threshold = 250000000 },
+    ['La Casa Boo'] = { emoji = '👁‍🗨', threshold = 0 },
+    ['Headless Horseman'] = { emoji = '🐴', threshold = 0 },
+    ['Los Tacoritas'] = { emoji = '🚴', threshold = 999999999 },
+    ['Capitano Moby'] = { emoji = '🚢', threshold = 0 },
     ['La Taco Combinasion'] = { emoji = '👒', threshold = 400000000 },
-    ['Cooki and Milki'] = { emoji = '🍪', threshold = 10000000 },
-    ['Los Puggies'] = { emoji = '🦮', threshold = 225000000 },
-    ['Orcaledon'] = { emoji = '🐡', threshold = 10000000 },
-    ['Fragrama and Chocrama'] = { emoji = '🍦', threshold = 10000000 },
-    ['Guest 666'] = { emoji = '㊙️', threshold = 10000000 },
-    ['Los Primos'] = { emoji = '🙆‍♂️', threshold = 250000000 },
+    ['Cooki and Milki'] = { emoji = '🍪', threshold = 0 },
+    ['Los Puggies'] = { emoji = '🦮', threshold = 305000000 },
+    ['Orcaledon'] = { emoji = '🐡', threshold = 240000000 },
+    ['Fragrama and Chocrama'] = { emoji = '🍦', threshold = 0 },
+    ['Guest 666'] = { emoji = '㊙️', threshold = 66000000 },
     ['Los Bros'] = { emoji = '📱', threshold = 300000000 },
-    ['Lavadorito Spinito'] = { emoji = '📺', threshold = 10000000 },
-    ['W or L'] = { emoji = '🪜', threshold = 100000000 },
-    ['Fishino Clownino'] = { emoji = '🤡', threshold = 10000000 },
+    ['Lavadorito Spinito'] = { emoji = '📺', threshold = 250000000 },
+    ['W or L'] = { emoji = '🪜', threshold = 300000000 },
+    ['Fishino Clownino'] = { emoji = '🤡', threshold = 0 },
     ['Mieteteira Bicicleteira'] = { emoji = '💄', threshold = 400000000 },
-    ['La Extinct Grande'] = { emoji = '☠️', threshold = 170000000 },
-    ['Los Chicleteiras'] = { emoji = '🍼', threshold = 140000000 },
+    ['La Extinct Grande'] = { emoji = '☠️', threshold = 370000000 },
+    ['Los Chicleteiras'] = { emoji = '🍼', threshold = 99999999 },
     ['Las Sis'] = { emoji = '☕️', threshold = 350000000 },
     ['Tacorita Bicicleta'] = { emoji = '🌮', threshold = 100000000 },
     ['Los Mobilis'] = { emoji = '📱', threshold = 400000000 },
     ['La Ginger Sekolah'] = { emoji = '🎄', threshold = 400000000 },
-    ['Christmas Chicleteira'] = { emoji = '🛷', threshold = 10000000 },
-    ['La Jolly Grande'] = { emoji = '☃️', threshold = 300000000 },
-    ['Gingerbread Dragon'] = { emoji = '🧸', threshold = 10000000 },
+    ['La Jolly Grande'] = { emoji = '☃️', threshold = 400000000 },
     ['Swaggy Bros'] = { emoji = '🍹', threshold = 400000000 },
     ['Los Burritos'] = { emoji = '🌯', threshold = 250000000 },
-    ['Reinito Sleighito'] = { emoji = '🦌', threshold = 25000000 },
-    ['Dragon Gingerini'] = { emoji = '🫚', threshold = 10000000 },
+    ['Reinito Sleighito'] = { emoji = '🦌', threshold = 0 },
+    ['Dragon Gingerini'] = { emoji = '🫚', threshold = 0 },
     ['Ginger Gerat'] = { emoji = '🌑', threshold = 10000000 },
     ['Jolly Jolly Sahur'] = { emoji = '🏴‍☠️', threshold = 100000000 },
     ['Money Money Reinted'] = { emoji = '🫰', threshold = 250000000 },
 }
 
--- 💰 ПАРСЕР ДОХОДА
+-- 📊 ДИАПАЗОНЫ ДЛЯ ОБЫЧНЫХ ВЕБХУКОВ
+local RANGES = {
+    FREE = { min = 1000000, max = 10000000, color = 0x00ff00 }, -- Зеленый
+    MEDIUM = { min = 10000000, max = 100000000, color = 0xffff00 }, -- Желтый
+    HARD = { min = 100000000, max = math.huge, color = 0xff0000 } -- Красный
+}
+
+print('🎯 Quantum Finder v3.0 | JobId:', game.JobId)
+
+-- 💰 ПАРСЕР ДОХОДА (остается без изменений)
 local function parseGenerationText(s)
     if type(s) ~= 'string' or s == '' then
         return nil
@@ -122,7 +129,7 @@ local function formatIncomeNumber(n)
     end
 end
 
--- 📝 ПОЛУЧЕНИЕ ТЕКСТА ИЗ UI
+-- 📝 ПОЛУЧЕНИЕ ТЕКСТА ИЗ UI (остается без изменений)
 local function grabText(inst)
     if not inst then
         return nil
@@ -199,7 +206,7 @@ local function isGuidName(s)
     return s:match('^[0-9a-fA-F]+%-%x+%-%x+%-%x+%-%x+$') ~= nil
 end
 
--- 🔍 ФУНКЦИЯ ПОИСКА ПРИБЫЛИ В DEBRIS FOLDER
+-- 🔍 СКАНЕРЫ (остаются без изменений)
 local function scanDebrisForIncome()
     local DebrisFolder = workspace:FindFirstChild("Debris")
     if not DebrisFolder then 
@@ -208,7 +215,6 @@ local function scanDebrisForIncome()
     end
 
     local results = {}
-
     for _, inst in ipairs(DebrisFolder:GetDescendants()) do
         if inst.Name == "FastOverheadTemplate" then
             local gui = inst:FindFirstChild("GUI")
@@ -216,37 +222,20 @@ local function scanDebrisForIncome()
             local genInst = gui and gui:FindFirstChild("Generation")
             local genText = genInst and grabText(genInst) or nil
             local genNum = genText and parseGenerationText(genText) or nil
-
             if name and genNum then
-                table.insert(results, { name = name, genText = genText, gen = genNum, location = "Debris" })
+                table.insert(results, { name = name, gen = genNum })
             end
         end
     end
-
-    -- Сортировка по доходу (убывание)
-    table.sort(results, function(a, b) return a.gen > b.gen end)
-
-    -- Вывод в консоль
-    if #results > 0 then
-        print("\n📊 НАЙДЕНО В DEBRIS FOLDER:")
-        for _, r in ipairs(results) do
-            print(string.format("   %s - %s (%.0f/s)", r.name, r.genText, r.gen))
-        end
-    else
-        print("📭 В Debris folder объектов не найдено")
-    end
-
     return results
 end
 
--- 🔍 ПОЛНЫЕ СКАНЕРЫ
 local function scanPlots()
     local results = {}
     local Plots = workspace:FindFirstChild('Plots')
     if not Plots then
         return results
     end
-
     for _, plot in ipairs(Plots:GetChildren()) do
         local Podiums = plot:FindFirstChild('AnimalPodiums')
         if Podiums then
@@ -258,13 +247,9 @@ local function scanPlots()
                     and Attachment:FindFirstChild('AnimalOverhead')
                 if Overhead then
                     local name, genText = getOverheadInfo(Overhead)
-                    local genNum = genText and parseGenerationText(genText)
-                        or nil
+                    local genNum = genText and parseGenerationText(genText) or nil
                     if name and genNum then
-                        table.insert(
-                            results,
-                            { name = name, gen = genNum, location = 'Plot' }
-                        )
+                        table.insert(results, { name = name, gen = genNum })
                     end
                 end
             end
@@ -284,10 +269,7 @@ local function scanRunway()
                 local name, genText = getOverheadInfo(overhead)
                 local genNum = genText and parseGenerationText(genText) or nil
                 if name and genNum then
-                    table.insert(
-                        results,
-                        { name = name, gen = genNum, location = 'Runway' }
-                    )
+                    table.insert(results, { name = name, gen = genNum })
                 end
             end
         end
@@ -304,10 +286,7 @@ local function scanAllOverheads()
                 local name, genText = getOverheadInfo(child)
                 local genNum = genText and parseGenerationText(genText) or nil
                 if name and genNum then
-                    table.insert(
-                        results,
-                        { name = name, gen = genNum, location = 'World' }
-                    )
+                    table.insert(results, { name = name, gen = genNum })
                 end
             end
             pcall(function()
@@ -325,22 +304,17 @@ local function scanPlayerGui()
     if not lp then
         return results
     end
-
     local playerGui = lp:FindFirstChild('PlayerGui')
     if not playerGui then
         return results
     end
-
     local function searchInGui(parent)
         for _, child in ipairs(parent:GetChildren()) do
             if child.Name == 'AnimalOverhead' or child.Name:match('Animal') then
                 local name, genText = getOverheadInfo(child)
                 local genNum = genText and parseGenerationText(genText) or nil
                 if name and genNum then
-                    table.insert(
-                        results,
-                        { name = name, gen = genNum, location = 'GUI' }
-                    )
+                    table.insert(results, { name = name, gen = genNum })
                 end
             end
             pcall(function()
@@ -356,24 +330,20 @@ end
 local function collectAll(timeoutSec)
     local t0 = os.clock()
     local collected = {}
-
     repeat
         collected = {}
-
         local allSources = {
             scanPlots(),
             scanRunway(),
             scanAllOverheads(),
             scanPlayerGui(),
-            scanDebrisForIncome(), -- Добавлен сканирование Debris
+            scanDebrisForIncome(),
         }
-
         for _, source in ipairs(allSources) do
             for _, item in ipairs(source) do
                 table.insert(collected, item)
             end
         end
-
         local seen, unique = {}, {}
         for _, item in ipairs(collected) do
             local key = item.name .. ':' .. tostring(item.gen)
@@ -383,13 +353,11 @@ local function collectAll(timeoutSec)
             end
         end
         collected = unique
-
         if #collected > 0 then
             break
         end
         task.wait(0.5)
     until os.clock() - t0 > timeoutSec
-
     return collected
 end
 
@@ -402,61 +370,125 @@ local function getRequester()
         or (KRNL_HTTP and KRNL_HTTP.request)
 end
 
-local function sendDiscordNotification(filteredObjects)
+-- 🔄 РАСПРЕДЕЛЕНИЕ ОБЪЕКТОВ ПО ГРУППАМ
+local function categorizeObjects(objects)
+    local categories = {
+        FREE = {},    -- 1M - 10M
+        MEDIUM = {},  -- 10M - 100M
+        HARD = {},    -- 100M+
+        CUSTOM = {}   -- Объекты для вашего вебхука
+    }
+    
+    for _, obj in ipairs(objects) do
+        if not obj.gen then
+            continue
+        end
+        
+        -- Проверяем, является ли объект кастомным (для вашего вебхука)
+        local customConfig = CUSTOM_OBJECTS[obj.name]
+        if customConfig and obj.gen >= customConfig.threshold then
+            -- Если объект из кастомного списка И его доход >= порога
+            table.insert(categories.CUSTOM, {
+                name = obj.name,
+                gen = obj.gen,
+                emoji = customConfig.emoji,
+                threshold = customConfig.threshold
+            })
+        else
+            -- Распределяем по обычным категориям
+            if obj.gen >= RANGES.HARD.min then
+                table.insert(categories.HARD, obj)
+            elseif obj.gen >= RANGES.MEDIUM.min and obj.gen < RANGES.MEDIUM.max then
+                table.insert(categories.MEDIUM, obj)
+            elseif obj.gen >= RANGES.FREE.min and obj.gen < RANGES.FREE.max then
+                table.insert(categories.FREE, obj)
+            end
+        end
+    end
+    
+    return categories
+end
+
+-- 🎨 ОТПРАВКА УВЕДОМЛЕНИЙ
+local function sendDiscordNotification(category, objects, color, botName)
     local req = getRequester()
     if not req then
         warn('❌ Нет HTTP API в executor')
         return
     end
-
-    local jobId = game.JobId
-    local placeId = game.PlaceId
-
-    if #filteredObjects == 0 then
-        print('🔍 Объектов выше порога не найдено')
+    
+    if #objects == 0 then
         return
     end
-
+    
+    local jobId = game.JobId
+    local placeId = game.PlaceId
+    
     -- Сортируем по доходу (убывание)
-    table.sort(filteredObjects, function(a, b)
+    table.sort(objects, function(a, b)
         return a.gen > b.gen
     end)
-
-    -- Формируем красивый список
+    
+    -- Формируем список объектов
     local objectsList = {}
-    for i = 1, math.min(15, #filteredObjects) do
-        local obj = filteredObjects[i]
-        local cfg = OBJECTS[obj.name] or {}
-        local emoji = cfg.emoji or '💰'
-        local threshold = cfg.threshold or DEFAULT_THRESHOLD
-
-        table.insert(
-            objectsList,
-            string.format(
-                '%s **%s** (%s) - порог: %s | %s',
-                emoji,
-                obj.name,
-                formatIncomeNumber(obj.gen),
-                formatIncomeNumber(threshold),
-                obj.location or 'Unknown'
+    local maxDisplay = math.min(10, #objects)
+    
+    for i = 1, maxDisplay do
+        local obj = objects[i]
+        if category == 'CUSTOM' then
+            -- Для кастомного вебхука
+            table.insert(
+                objectsList,
+                string.format(
+                    '%s **%s** - %s (порог: %s)',
+                    obj.emoji or '💰',
+                    obj.name,
+                    formatIncomeNumber(obj.gen),
+                    formatIncomeNumber(obj.threshold)
+                )
             )
-        )
+        else
+            -- Для обычных вебхуков
+            local emoji = CUSTOM_OBJECTS[obj.name] and CUSTOM_OBJECTS[obj.name].emoji or '💰'
+            table.insert(
+                objectsList,
+                string.format(
+                    '%s **%s** - %s',
+                    emoji,
+                    obj.name,
+                    formatIncomeNumber(obj.gen)
+                )
+            )
+        end
     end
+    
+    if #objects > maxDisplay then
+        table.insert(objectsList, string.format('... и ещё %d объектов', #objects - maxDisplay))
+    end
+    
     local objectsText = table.concat(objectsList, '\n')
-
+    
     -- Телепорт команда
     local teleportText = string.format(
         "`local ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')`",
         placeId,
         jobId
     )
-
+    
+    -- Тайтлы для разных категорий
+    local titles = {
+        FREE = '💚 FREE TIER (1M - 10M)',
+        MEDIUM = '💛 MEDIUM TIER (10M - 100M)',
+        HARD = '❤️ HARD TIER (100M+)',
+        CUSTOM = '💎 ВАЖНЫЕ ОБЪЕКТЫ'
+    }
+    
     local payload = {
-        username = '🎯 Brainrot Scanner',
+        username = botName,
         embeds = {
             {
-                title = '💎 Найдены объекты выше порога!',
-                color = 0x2f3136,
+                title = titles[category] or '💰 Quantum Finder',
+                color = color,
                 fields = {
                     {
                         name = '🆔 Сервер (Job ID)',
@@ -464,7 +496,7 @@ local function sendDiscordNotification(filteredObjects)
                         inline = false,
                     },
                     {
-                        name = '💰 Объекты:',
+                        name = '📊 Объекты:',
                         value = objectsText,
                         inline = false,
                     },
@@ -477,7 +509,7 @@ local function sendDiscordNotification(filteredObjects)
                 footer = {
                     text = string.format(
                         'Найдено: %d объектов • %s',
-                        #filteredObjects,
+                        #objects,
                         os.date('%H:%M:%S')
                     ),
                 },
@@ -485,20 +517,20 @@ local function sendDiscordNotification(filteredObjects)
             },
         },
     }
-
-    print('📤 Отправляю уведомление с', #filteredObjects, 'объектами')
-
+    
+    print(string.format('📤 Отправляю на %s вебхук: %d объектов', category, #objects))
+    
     local ok, res = pcall(function()
         return req({
-            Url = DISCORD_WEBHOOK_URL,
+            Url = WEBHOOKS[category],
             Method = 'POST',
             Headers = { ['Content-Type'] = 'application/json' },
             Body = HttpService:JSONEncode(payload),
         })
     end)
-
+    
     if ok then
-        print('✅ Уведомление отправлено в Discord!')
+        print('✅ Уведомление отправлено!')
     else
         warn('❌ Ошибка отправки:', res)
     end
@@ -508,63 +540,41 @@ end
 local function scanAndNotify()
     print('🔍 Сканирую все объекты...')
     
-    -- Сначала сканируем Debris отдельно для вывода в консоль
-    scanDebrisForIncome()
-    
-    -- Затем собираем все объекты
     local allFound = collectAll(8.0)
-
-    -- Фильтрация по индивидуальным порогам
-    local filtered = {}
-    for _, obj in ipairs(allFound) do
-        local cfg = OBJECTS[obj.name]
-        if cfg and obj.gen then
-            local threshold = cfg.threshold or DEFAULT_THRESHOLD
-            if obj.gen >= threshold then
-                table.insert(filtered, obj)
-            end
-        end
+    
+    if #allFound == 0 then
+        print('❌ Объектов не найдено')
+        return
     end
-
+    
+    print(string.format('📊 Найдено объектов: %d', #allFound))
+    
+    -- Категоризация объектов
+    local categories = categorizeObjects(allFound)
+    
+    -- Отправка уведомлений
+    sendDiscordNotification('FREE', categories.FREE, RANGES.FREE.color, 'Quantum Finder')
+    sendDiscordNotification('MEDIUM', categories.MEDIUM, RANGES.MEDIUM.color, 'Quantum Finder')
+    sendDiscordNotification('HARD', categories.HARD, RANGES.HARD.color, 'Quantum Finder')
+    sendDiscordNotification('CUSTOM', categories.CUSTOM, 0x2f3136, 'Brainrot Scanner')
+    
     -- Вывод в консоль
-    print('\n📊 ОБЩИЙ ОТЧЕТ:')
-    print('Найдено всего объектов:', #allFound)
-    print('Выше порога:', #filtered)
-
-    for _, obj in ipairs(filtered) do
-        local cfg = OBJECTS[obj.name] or {}
-        local emoji = cfg.emoji or '💰'
-        local threshold = cfg.threshold or DEFAULT_THRESHOLD
-
-        print(
-            string.format(
-                '%s %s: %s (%s) - порог: %s',
-                emoji,
-                obj.name,
-                formatIncomeNumber(obj.gen),
-                obj.location or 'Unknown',
-                formatIncomeNumber(threshold)
-            )
-        )
-    end
-
-    -- Отправляем уведомление если есть что показать
-    if #filtered > 0 then
-        sendDiscordNotification(filtered)
-    else
-        print('🔍 Нет объектов выше порога')
-    end
+    print('\n📊 ОТЧЕТ О РАСПРЕДЕЛЕНИИ:')
+    print(string.format('   FREE (1M-10M): %d объектов', #categories.FREE))
+    print(string.format('   MEDIUM (10M-100M): %d объектов', #categories.MEDIUM))
+    print(string.format('   HARD (100M+): %d объектов', #categories.HARD))
+    print(string.format('   CUSTOM (важные): %d объектов', #categories.CUSTOM))
 end
 
 -- 🚀 ЗАПУСК
-print('🎯 === BRAINROT INCOME SCANNER (ИНДИВИДУАЛЬНЫЕ ПОРОГИ) ===')
-print('💡 Каждый объект имеет свой порог уведомления')
-print('⚙️  Настрой пороги в разделе OBJECTS')
-print('📁 Добавлено сканирование Debris folder')
+print('🎯 === QUANTUM FINDER v3.0 ===')
+print('💡 Система мульти-вебхуков с приоритетами')
+print('📊 Диапазоны: FREE(1M-10M) | MEDIUM(10M-100M) | HARD(100M+)')
+print('💎 Кастомные объекты отправляются только на ваш вебхук')
 
--- Показываем текущие пороги
-print('\n📊 ТЕКУЩИЕ ПОРОГИ:')
-for name, cfg in pairs(OBJECTS) do
+-- Показываем кастомные пороги
+print('\n📊 КАСТОМНЫЕ ПОРОГИ:')
+for name, cfg in pairs(CUSTOM_OBJECTS) do
     print(string.format('   %s %s: %s', cfg.emoji, name, formatIncomeNumber(cfg.threshold)))
 end
 print('')
@@ -589,8 +599,8 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 end)
 
 print('💡 Нажмите F для повторного сканирования')
-print('📱 Discord webhook готов к отправке уведомлений')
-print('📁 Debris сканирование активно')
+print('🎨 Цвета: Зеленый(FREE) | Желтый(MEDIUM) | Красный(HARD)')
+print('🤖 Бот: Quantum Finder (FREE/MEDIUM/HARD) | Brainrot Scanner (CUSTOM)')
 
 -- Загрузка дополнительного скрипта
-loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/bottik.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
