@@ -10,7 +10,7 @@ local WEBHOOKS = {
     FREE = 'https://discord.com/api/webhooks/1453729854104010772/7UXQvdJ0Dro89rKnAO_KPX8ZuCFiZTxfLbdwE3JqsZT03lZbJ5rwJFhuc96OI6X_Sm9i',
     MEDIUM = 'https://discord.com/api/webhooks/1453730100553060513/tvqeJZONQsLre8yHjFMiIvsiJse4ICsP5lXY-TXwLWPhoBYOfOHfElL9shXMNjKWA7Lz',
     HARD = 'https://discord.com/api/webhooks/1453730791266713664/vKHb28keJPXMaZUjAnwujt5ic0J0eQW4qlF-5JbwG329gOwU5LBUtpTKWaAabg21ZP6O',
-    CUSTOM = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
+    CUSTOM = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI'
 }
 
 -- 🎮 ОБЪЕКТЫ ДЛЯ КАСТОМНОГО ВЕБХУКА (порог для отправки ТОЛЬКО на ваш вебхук)
