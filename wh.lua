@@ -476,7 +476,7 @@ local function sendDiscordNotification(category, objects, color, botName)
     
     -- Телепорт команда
     local teleportText = string.format(
-        "`local ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')`",
+        "```lua\nlocal ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')\n```",
         placeId,
         jobId
     )
