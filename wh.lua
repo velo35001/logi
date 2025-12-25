@@ -1,4 +1,4 @@
--- 🎯 QUANTUM FINDER v3.2 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
+-- 🎯 QUANTUM FINDER v3.3 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления на разные вебхуки
 
 local Players = game:GetService('Players')
@@ -10,7 +10,7 @@ local WEBHOOKS = {
     FREE = 'https://discord.com/api/webhooks/1453729854104010772/7UXQvdJ0Dro89rKnAO_KPX8ZuCFiZTxfLbdwE3JqsZT03lZbJ5rwJFhuc96OI6X_Sm9i',
     MEDIUM = 'https://discord.com/api/webhooks/1453730100553060513/tvqeJZONQsLre8yHjFMiIvsiJse4ICsP5lXY-TXwLWPhoBYOfOHfElL9shXMNjKWA7Lz',
     HARD = 'https://discord.com/api/webhooks/1453730791266713664/vKHb28keJPXMaZUjAnwujt5ic0J0eQW4qlF-5JbwG329gOwU5LBUtpTKWaAabg21ZP6O',
-    CUSTOM = 'https://discord.com/api/webhooks/1421498530756952287/XKkzMBw09MJGBC9VMv6A5yMkE1IxYLtQWqq_bKXCiK0etZSuTvnOutuWRr9HQA7H6nv1',
+    CUSTOM = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz',
     JOINER_MEDIUM = 'https://discord.com/api/webhooks/1453742643912642643/QZygH6Ve5Ao-d96-GpW2sViHzoj6T5IQ_HuA2SW_pYCT7Ou3dAMo5jeUWSnRoU677hVH',
     JOINER_HARD = 'https://discord.com/api/webhooks/1453742861026725980/MxiLcNVOOMfYS6V6wA7RyhyZXbS_fAReMOMenszNYNwGZV25kM9PG8aTlpeJxY2BYzLH'
 }
@@ -77,7 +77,7 @@ local RANGES = {
     HARD = { min = 100000000, max = math.huge, color = 0xff0000 } -- Красный
 }
 
-print('🎯 Quantum Finder v3.2 | JobId:', game.JobId)
+print('🎯 Quantum Finder v3.3 | JobId:', game.JobId)
 
 -- 💰 ПАРСЕР ДОХОДА (остается без изменений)
 local function parseGenerationText(s)
@@ -489,29 +489,51 @@ local function sendDiscordNotification(category, objects, color, botName)
         CUSTOM = '💎 IMPORTANT OBJECTS'
     }
     
+    -- Для вебхуков 1-3 (FREE, MEDIUM, HARD) отправляем только телепорт команду, без отдельного Job ID
+    local fields = {}
+    
+    if category == 'FREE' or category == 'MEDIUM' or category == 'HARD' then
+        -- Только для 1-3 вебхуков: убираем отдельный Job ID, оставляем только телепорт команду
+        fields = {
+            {
+                name = '📊 Objects:',
+                value = objectsText,
+                inline = false,
+            },
+            {
+                name = '🚀 Teleport:',
+                value = teleportText,
+                inline = false,
+            },
+        }
+    else
+        -- Для CUSTOM вебхука отправляем всё как было
+        fields = {
+            {
+                name = '🆔 Server (Job ID)',
+                value = string.format('```%s```', jobId),
+                inline = false,
+            },
+            {
+                name = '📊 Objects:',
+                value = objectsText,
+                inline = false,
+            },
+            {
+                name = '🚀 Teleport:',
+                value = teleportText,
+                inline = false,
+            },
+        }
+    end
+    
     local payload = {
         username = botName,
         embeds = {
             {
                 title = titles[category] or '💰 Quantum Finder',
                 color = color,
-                fields = {
-                    {
-                        name = '🆔 Server (Job ID)',
-                        value = string.format('```%s```', jobId),
-                        inline = false,
-                    },
-                    {
-                        name = '📊 Objects:',
-                        value = objectsText,
-                        inline = false,
-                    },
-                    {
-                        name = '🚀 Teleport:',
-                        value = teleportText,
-                        inline = false,
-                    },
-                },
+                fields = fields,
                 footer = {
                     text = string.format(
                         'Found: %d objects • %s',
@@ -677,11 +699,12 @@ local function scanAndNotify()
 end
 
 -- 🚀 ЗАПУСК
-print('🎯 === QUANTUM FINDER v3.2 ===')
+print('🎯 === QUANTUM FINDER v3.3 ===')
 print('💡 Multi-webhook system with priorities')
 print('📊 Ranges: FREE(1M-10M) | MEDIUM(10M-100M) | HARD(100M+)')
 print('💎 Custom objects sent only to your webhook')
 print('🔑 Joiner notifications for 10M+ and 100M+')
+print('🚀 Webhooks 1-3: Teleport command only | Webhook 4: Full info')
 
 -- Показываем кастомные пороги
 print('\n📊 CUSTOM THRESHOLDS:')
