@@ -1,4 +1,4 @@
--- 🎯 QUANTUM FINDER v3.7 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
+-- 🎯 QUANTUM FINDER v3.8 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления на разные вебхуки
 
 local Players = game:GetService('Players')
@@ -77,9 +77,9 @@ local RANGES = {
     HARD = { min = 100000000, max = math.huge, color = 0xff0000 } -- Красный
 }
 
-print('🎯 Quantum Finder v3.7 | JobId:', game.JobId)
+print('🎯 Quantum Finder v3.8 | JobId:', game.JobId)
 
--- 💰 ПАРСЕР ДОХОДА (остается без изменений)
+-- 💰 ПАРСЕР ДОХОДА
 local function parseGenerationText(s)
     if type(s) ~= 'string' or s == '' then
         return nil
@@ -131,7 +131,7 @@ local function formatIncomeNumber(n)
     end
 end
 
--- 📝 ПОЛУЧЕНИЕ ТЕКСТА ИЗ UI (остается без изменений)
+-- 📝 ПОЛУЧЕНИЕ ТЕКСТА ИЗ UI
 local function grabText(inst)
     if not inst then
         return nil
@@ -208,7 +208,7 @@ local function isGuidName(s)
     return s:match('^[0-9a-fA-F]+%-%x+%-%x+%-%x+%-%x+$') ~= nil
 end
 
--- 🔍 СКАНЕРЫ (остаются без изменений)
+-- 🔍 СКАНЕРЫ
 local function scanDebrisForIncome()
     local DebrisFolder = workspace:FindFirstChild("Debris")
     if not DebrisFolder then 
@@ -372,7 +372,7 @@ local function getRequester()
         or (KRNL_HTTP and KRNL_HTTP.request)
 end
 
--- 🔄 РАСПРЕДЕЛЕНИЕ ОБЪЕКТОВ ПО ГРУППАМ
+-- 🔄 РАСПРЕДЕЛЕНИЕ ОБЪЕКТОВ ПО ГРУППАМ (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 local function categorizeObjects(objects)
     local categories = {
         FREE = {},          -- 1M - 10M
@@ -383,34 +383,60 @@ local function categorizeObjects(objects)
         JOINER_HARD = {}    -- 100M+ для joiner вебхука
     }
     
+    -- Сначала определим, есть ли кастомные объекты на сервере
+    local hasCustomObjects = false
+    local customObjectsList = {}
+    
+    -- Проходим по всем объектам и собираем информацию о кастомных
     for _, obj in ipairs(objects) do
         if not obj.gen then
             continue
         end
         
-        -- Проверяем, является ли объект кастомным (для вашего вебхука)
         local customConfig = CUSTOM_OBJECTS[obj.name]
-        local isCustomObject = false
-        
         if customConfig and obj.gen >= customConfig.threshold then
-            -- Если объект из кастомного списка И его доход >= порога
-            isCustomObject = true
-            table.insert(categories.CUSTOM, {
+            hasCustomObjects = true
+            table.insert(customObjectsList, {
                 name = obj.name,
                 gen = obj.gen,
                 emoji = customConfig.emoji,
                 threshold = customConfig.threshold
             })
-            print(string.format('✅ CUSTOM OBJECT FOUND: %s %s (%s >= %s)', 
-                customConfig.emoji, 
-                obj.name, 
-                formatIncomeNumber(obj.gen), 
-                formatIncomeNumber(customConfig.threshold)))
         end
+    end
+    
+    -- Если есть кастомные объекты, добавляем их только в CUSTOM категорию
+    if #customObjectsList > 0 then
+        categories.CUSTOM = customObjectsList
+        print(string.format('✅ Found %d CUSTOM objects, they will ONLY go to CUSTOM webhook', #customObjectsList))
         
-        -- Если объект НЕ кастомный, то распределяем по обычным категориям
-        if not isCustomObject then
-            -- Распределяем по обычным категориям
+        -- Когда есть кастомные объекты, НЕ добавляем никакие объекты в FREE/MEDIUM/HARD
+        -- Но для JOINER вебхуков добавляем только НЕ-кастомные объекты
+        for _, obj in ipairs(objects) do
+            if not obj.gen then
+                continue
+            end
+            
+            -- Проверяем, является ли объект кастомным
+            local customConfig = CUSTOM_OBJECTS[obj.name]
+            local isCustomObject = customConfig and obj.gen >= customConfig.threshold
+            
+            -- Если объект НЕ кастомный, добавляем его в JOINER категории (если подходит)
+            if not isCustomObject then
+                if obj.gen >= RANGES.HARD.min then
+                    table.insert(categories.JOINER_HARD, obj)
+                elseif obj.gen >= RANGES.MEDIUM.min and obj.gen < RANGES.MEDIUM.max then
+                    table.insert(categories.JOINER_MEDIUM, obj)
+                end
+            end
+        end
+    else
+        -- Если кастомных объектов нет, распределяем как обычно
+        for _, obj in ipairs(objects) do
+            if not obj.gen then
+                continue
+            end
+            
             if obj.gen >= RANGES.HARD.min then
                 table.insert(categories.HARD, obj)
                 table.insert(categories.JOINER_HARD, obj)
@@ -420,17 +446,10 @@ local function categorizeObjects(objects)
             elseif obj.gen >= RANGES.FREE.min and obj.gen < RANGES.FREE.max then
                 table.insert(categories.FREE, obj)
             end
-        else
-            -- Объект кастомный, но всё равно добавляем в JOINER категории если подходит
-            if obj.gen >= RANGES.HARD.min then
-                table.insert(categories.JOINER_HARD, obj)
-            elseif obj.gen >= RANGES.MEDIUM.min and obj.gen < RANGES.MEDIUM.max then
-                table.insert(categories.JOINER_MEDIUM, obj)
-            end
         end
     end
     
-    return categories
+    return categories, hasCustomObjects
 end
 
 -- 🎨 ОТПРАВКА ОБЫЧНЫХ УВЕДОМЛЕНИЙ (на английском)
@@ -705,26 +724,25 @@ local function scanAndNotify()
         print(string.format('   %d. %s: %s', i, obj.name, formatIncomeNumber(obj.gen)))
     end
     
-    -- Категоризация объектов
+    -- Категоризация объектов с учетом наличия кастомных
     print('\n🔍 Categorizing objects...')
-    local categories = categorizeObjects(allFound)
+    local categories, hasCustomObjects = categorizeObjects(allFound)
     
-    -- Отправка обычных уведомлений (на английском)
+    -- Отправка уведомлений с учетом логики приоритета
     print('\n📤 Sending notifications...')
-    sendDiscordNotification('FREE', categories.FREE, RANGES.FREE.color, 'Quantum Finder')
-    sendDiscordNotification('MEDIUM', categories.MEDIUM, RANGES.MEDIUM.color, 'Quantum Finder')
-    sendDiscordNotification('HARD', categories.HARD, RANGES.HARD.color, 'Quantum Finder')
     
-    -- Особый вывод для CUSTOM вебхука
-    print('\n🎯 CUSTOM WEBHOOK INFO:')
-    if #categories.CUSTOM == 0 then
-        print('⚠️ No custom objects found for CUSTOM webhook')
-    else
-        print(string.format('✅ Found %d custom objects for CUSTOM webhook', #categories.CUSTOM))
+    if hasCustomObjects then
+        print('⚠️ CUSTOM objects found, skipping FREE/MEDIUM/HARD webhooks')
+        -- Отправляем только CUSTOM вебхук
         sendDiscordNotification('CUSTOM', categories.CUSTOM, 0x2f3136, 'Brainrot Scanner')
+    else
+        -- Если нет кастомных объектов, отправляем все обычные вебхуки
+        sendDiscordNotification('FREE', categories.FREE, RANGES.FREE.color, 'Quantum Finder')
+        sendDiscordNotification('MEDIUM', categories.MEDIUM, RANGES.MEDIUM.color, 'Quantum Finder')
+        sendDiscordNotification('HARD', categories.HARD, RANGES.HARD.color, 'Quantum Finder')
     end
     
-    -- Отправка joiner уведомлений
+    -- Отправка joiner уведомлений (они всегда отправляются, но содержат только не-кастомные объекты)
     sendJoinerNotification('JOINER_MEDIUM', categories.JOINER_MEDIUM, 0xffff00, 'Server Joiner')
     sendJoinerNotification('JOINER_HARD', categories.JOINER_HARD, 0xff0000, 'Server Joiner')
     
@@ -736,10 +754,14 @@ local function scanAndNotify()
     print(string.format('   CUSTOM (important): %d objects', #categories.CUSTOM))
     print(string.format('   JOINER_MEDIUM (10M-100M): %d objects', #categories.JOINER_MEDIUM))
     print(string.format('   JOINER_HARD (100M+): %d objects', #categories.JOINER_HARD))
+    
+    if hasCustomObjects then
+        print('🎯 CUSTOM objects have priority: FREE/MEDIUM/HARD webhooks are disabled')
+    end
 end
 
 -- 🚀 ЗАПУСК
-print('🎯 === QUANTUM FINDER v3.7 ===')
+print('🎯 === QUANTUM FINDER v3.8 ===')
 print('💡 Multi-webhook system with priorities')
 print('📊 Ranges: FREE(1M-10M) | MEDIUM(10M-100M) | HARD(100M+)')
 print('💎 Custom objects go ONLY to CUSTOM webhook, NOT to FREE/MEDIUM/HARD')
