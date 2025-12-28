@@ -7,7 +7,7 @@ local TweenService = game:GetService("TweenService")
 -- Настройки для быстрого перебора серверов
 local SETTINGS = {
     GAME_ID = 109983668079237,
-    PASTEFY_URL = "https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/logi.txt",
+    PASTEFY_URL = "https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/log.txt",
     COOLDOWN_TIME = 0.5,  -- Уменьшено до 0.5 секунд
     COUNTDOWN_TIME = 0,   -- Убрана задержка перед телепортом
     ERROR_RETRY_DELAY = 0.2,  -- Уменьшено до 0.2 секунд при ошибке
