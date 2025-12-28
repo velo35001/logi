@@ -1,4 +1,3 @@
-
 -- 🎯 BRAINROT INCOME SCANNER v2.0 (ИНДИВИДУАЛЬНЫЕ ПОРОГИ)
 -- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
 -- Запуск: автоматически при старте + по клавише F
@@ -9,7 +8,7 @@ local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
 local DEFAULT_THRESHOLD = 50_000_000 -- Порог по умолчанию
-local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI'
+local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1421494214570807481/uYgRF4vI6NEHNFF0tNmoG-wTOBypMlgTsRlmY_6qSkA4DxgTTCe70U7Cbv-kkTCoQOPz'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
@@ -20,18 +19,18 @@ local OBJECTS = {
     ['Nuclearo Dinossauro'] = { emoji = '🦕', threshold = 240000000 },
     ['Esok Sekolah'] = { emoji = '🏠', threshold = 400000000 },
     ['La Supreme Combinasion'] = { emoji = '🔫', threshold = 0 },
-    ['Ketupat Kepat'] = { emoji = '🍏', threshold = 100000000 },
+    ['Ketupat Kepat'] = { emoji = '🍏', threshold = 180000000 },
     ['Strawberry Elephant'] = { emoji = '🐘', threshold = 0 },
-    ['Spaghetti Tualetti'] = { emoji = '🚽', threshold = 420000000 },
-    ['Ketchuru and Musturu'] = { emoji = '🍾', threshold = 41000000 },
+    ['Spaghetti Tualetti'] = { emoji = '🚽', threshold = 500000000 },
+    ['Ketchuru and Musturu'] = { emoji = '🍾', threshold = 63000000 },
     ['Tralaledon'] = { emoji = '🦈', threshold = 0 },
-    ['Tictac Sahur'] = { emoji = '🕰️', threshold = 100000000 },
+    ['Tictac Sahur'] = { emoji = '🕰️', threshold = 150000000 },
     ['Los Primos'] = { emoji = '🙆‍♂️', threshold = 0 },
-    ['Tang Tang Keletang'] = { emoji = '📢', threshold = 200000000 },
+    ['Tang Tang Keletang'] = { emoji = '📢', threshold = 300000000 },
     ['Money Money Puggy'] = { emoji = '🐶', threshold = 300000000 },
     ['Burguro And Fryuro'] = { emoji = '🍔', threshold = 0 },
     ['Chillin Chili'] = { emoji = '🌶', threshold = 200000000 },
-    ['La Secret Combinasion'] = { emoji = '❓', threshold = 100000000 },
+    ['La Secret Combinasion'] = { emoji = '❓', threshold = 187500000 },
     ['Eviledon'] = { emoji = '👹', threshold = 300000000 },
     ['Spooky and Pumpky'] = { emoji = '🎃', threshold = 0 },
     ['La Spooky Grande'] = { emoji = '👻', threshold = 500000000 },
@@ -41,14 +40,14 @@ local OBJECTS = {
     ['Headless Horseman'] = { emoji = '🐴', threshold = 0 },
     ['Los Tacoritas'] = { emoji = '🚴', threshold = 999999999 },
     ['Capitano Moby'] = { emoji = '🚢', threshold = 0 },
-    ['La Taco Combinasion'] = { emoji = '👒', threshold = 320000000 },
+    ['La Taco Combinasion'] = { emoji = '👒', threshold = 400000000 },
     ['Cooki and Milki'] = { emoji = '🍪', threshold = 0 },
     ['Los Puggies'] = { emoji = '🦮', threshold = 305000000 },
     ['Orcaledon'] = { emoji = '🐡', threshold = 240000000 },
     ['Fragrama and Chocrama'] = { emoji = '🍦', threshold = 0 },
     ['Guest 666'] = { emoji = '㊙️', threshold = 66000000 },
     ['Los Bros'] = { emoji = '📱', threshold = 300000000 },
-    ['Lavadorito Spinito'] = { emoji = '📺', threshold = 0 },
+    ['Lavadorito Spinito'] = { emoji = '📺', threshold = 250000000 },
     ['W or L'] = { emoji = '🪜', threshold = 300000000 },
     ['Fishino Clownino'] = { emoji = '🤡', threshold = 0 },
     ['Mieteteira Bicicleteira'] = { emoji = '💄', threshold = 400000000 },
@@ -66,6 +65,7 @@ local OBJECTS = {
     ['Ginger Gerat'] = { emoji = '🌑', threshold = 10000000 },
     ['Jolly Jolly Sahur'] = { emoji = '🏴‍☠️', threshold = 100000000 },
     ['Money Money Reinted'] = { emoji = '🫰', threshold = 250000000 },
+    ['Skibidi Toilet'] = { emoji = '🪠', threshold = 0 },
 }
 
 -- 💰 ПАРСЕР ДОХОДА
@@ -591,4 +591,4 @@ print('📱 Discord webhook готов к отправке уведомлени�
 print('📁 Debris сканирование активно')
 
 -- Загрузка дополнительного скрипта
-loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/bottik.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
