@@ -420,40 +420,40 @@ local function sendDiscordNotification(filteredObjects)
         return a.gen > b.gen
     end)
 
-    -- Формируем красивый список
+    -- Формируем список объектов (без слова "порог" и без локаций World/Debris)
     local objectsList = {}
     for i = 1, math.min(15, #filteredObjects) do
         local obj = filteredObjects[i]
         local cfg = OBJECTS[obj.name] or {}
         local emoji = cfg.emoji or '💰'
-        local threshold = cfg.threshold or DEFAULT_THRESHOLD
-
+        
+        -- Исключаем локации "World" и "Debris"
+        local locationText = ""
+        if obj.location and obj.location ~= "World" and obj.location ~= "Debris" then
+            locationText = " | " .. obj.location
+        end
+        
         table.insert(
             objectsList,
             string.format(
-                '%s **%s** (%s) - порог: %s | %s',
+                '%s **%s** (%s)%s',
                 emoji,
                 obj.name,
                 formatIncomeNumber(obj.gen),
-                formatIncomeNumber(threshold),
-                obj.location or 'Unknown'
+                locationText
             )
         )
     end
     local objectsText = table.concat(objectsList, '\n')
 
-    -- Телепорт команда
-    local teleportText = string.format(
-        "`local ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')`",
-        placeId,
-        jobId
-    )
+    -- Телепорт команда в отдельном блоке для копирования
+    local teleportText = "```lua\nlocal ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(109983668079237, '54ef12f9-7a83-4414-a58c-cd49c8a5700e')\n```"
 
     local payload = {
         username = '🎯 Brainrot Scanner',
         embeds = {
             {
-                title = '💎 Найдены объекты выше порога!',
+                title = '💎 Найдены объекты!',
                 color = 0x2f3136,
                 fields = {
                     {
@@ -467,7 +467,7 @@ local function sendDiscordNotification(filteredObjects)
                         inline = false,
                     },
                     {
-                        name = '🚀 Телепорт:',
+                        name = '🚀 Телепорт (нажмите 📋 чтобы скопировать):',
                         value = teleportText,
                         inline = false,
                     },
