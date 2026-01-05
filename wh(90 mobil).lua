@@ -447,7 +447,7 @@ local function sendDiscordNotification(filteredObjects)
     local objectsText = table.concat(objectsList, '\n')
 
     -- Телепорт команда в отдельном блоке для копирования
-    local teleportText = "```lua\nlocal ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(109983668079237, '54ef12f9-7a83-4414-a58c-cd49c8a5700e')\n```"
+    local teleportText = string.format("```lua\nlocal ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')\n```", game.PlaceId, game.JobId)
 
     local payload = {
         username = '🎯 Brainrot Scanner',
