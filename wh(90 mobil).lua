@@ -8,7 +8,7 @@ local HttpService = game:GetService('HttpService')
 
 -- ⚙️ НАСТРОЙКИ
 local DEFAULT_THRESHOLD = 50_000_000 -- Порог по умолчанию
-local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1422238166630400044/3ueuPIMI-MIwesyQvnBVd-3d60iBNk3ZCVCGB4Topy90rNEQ7zgtVGHirj-03PUcSU7b'
+local DISCORD_WEBHOOK_URL = 'https://ptb.discord.com/api/webhooks/1449338633218949201/0cC2kYc5bnPJ8LbQnFjTkuPSyl6B444DcnDwZjjxRGIm-r8B1ht96SUFjDOq1Cer1KzI'
 
 print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
 
@@ -447,7 +447,7 @@ local function sendDiscordNotification(filteredObjects)
     local objectsText = table.concat(objectsList, '\n')
 
     -- Телепорт команда в отдельном блоке для копирования
-   local teleportText = string.format("```lua\nlocal ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')\n```", game.PlaceId, game.JobId)
+    local teleportText = string.format("```lua\nlocal ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')\n```", game.PlaceId, game.JobId)
 
     local payload = {
         username = '🎯 Brainrot Scanner',
@@ -591,4 +591,4 @@ print('📱 Discord webhook готов к отправке уведомлени�
 print('📁 Debris сканирование активно')
 
 -- Загрузка дополнительного скрипта
-loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/bottik.lua"))()
