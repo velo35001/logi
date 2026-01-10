@@ -66,6 +66,7 @@ local OBJECTS = {
     ['Jolly Jolly Sahur'] = { emoji = '🏴‍☠️', threshold = 100000000 },
     ['Money Money Reinted'] = { emoji = '🫰', threshold = 250000000 },
     ['Skibidi Toilet'] = { emoji = '🪠', threshold = 0 },
+    ['Cerberus'] = { emoji = '🐩', threshold = 2500000000 },
 }
 
 -- 💰 ПАРСЕР ДОХОДА
