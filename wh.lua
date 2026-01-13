@@ -29,7 +29,7 @@ local OBJECTS = {
     ['Tang Tang Keletang'] = { emoji = '📢', threshold = 300000000 },
     ['Money Money Puggy'] = { emoji = '🐶', threshold = 300000000 },
     ['Burguro And Fryuro'] = { emoji = '🍔', threshold = 0 },
-    ['Chillin Chili'] = { emoji = '🌶', threshold = 200000000 },
+    ['Chillin Chili'] = { emoji = '🌶', threshold = 420000000 },
     ['La Secret Combinasion'] = { emoji = '❓', threshold = 687500000 },
     ['Eviledon'] = { emoji = '👹', threshold = 500000000 },
     ['Spooky and Pumpky'] = { emoji = '🎃', threshold = 0 },
