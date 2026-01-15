@@ -16,6 +16,34 @@ local takestam_remote = rs_events:FindFirstChild("takestam")
 local shop_remote = rs_events:FindFirstChild("Shop")
 local tools_remote = rs_events:FindFirstChild("Tools")
 
+-- Функция для перезахода на другой сервер
+local function HopServer()
+    print("[SYSTEM] Запуск процесса смены сервера...")
+    local sfUrl = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100"
+    local success, result = pcall(function()
+        return game:HttpGet(string.format(sfUrl, game.PlaceId))
+    end)
+    if success then
+        local servers = HttpService:JSONDecode(result)
+        for _, s in pairs(servers.data) do
+            if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                print("[SYSTEM] Переход на сервер: " .. s.id)
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
+                return
+            end
+        end
+    end
+    print("[ERROR] Не удалось найти подходящий сервер для прыжка.")
+end
+
+-- Таймер на 18 минут для перезахода
+task.spawn(function()
+    print("[TIMER] Таймер авто-перезахода (18 мин) запущен.")
+    task.wait(18 * 60)
+    print("[TIMER] 18 минут прошло. Перезахожу...")
+    HopServer()
+end)
+
 local function check_sea()
     if game.GameId == 648454481 and playgame_remote then
         playgame_remote:FireServer("Main Game")
@@ -75,7 +103,7 @@ local function SendWebhook()
         local currentPeli = GetPeli()
         local payload = {
             ["username"] = "Onyx Squad [Private]",
-            ["avatar_url"] = "https://cdn.discordapp.com/attachments/1455503437000347713/1461361287882735832/latest.png?ex=696a4641&is=6968f4c1&hm=4c0c1bfc3326f8e6f6f867c45308d645611b8f49526b6cb3f87f0365f90e7a9e&",
+            ["avatar_url"] = "https://cdn.discordapp.com/attachments/1455503437000347713/1461361287882735832/latest.png",
             ["embeds"] = {{
                 ["title"] = "**Onyx Squad have info for you!**",
                 ["description"] = string.format(
@@ -87,9 +115,6 @@ local function SendWebhook()
                     tostring(historyPeli or "nil")
                 ),
                 ["color"] = 0,
-                ["image"] = {
-                    ["url"] = "https://media.discordapp.net/attachments/1455503437000347713/1461359339272147037/image.png?ex=696a4471&is=6968f2f1&hm=1a5fe16b73e7a8f6d830a10f3a704ea21b7240fa929ca23b1a17ebc826a6d350&=&format=webp&quality=lossless"
-                }
             }}
         }
         httpRequest({
@@ -108,23 +133,7 @@ local function SendWebhook()
         historyPeli = currentPeli
     end
 end
-spawn(SendWebhook)
-
-local function HopServer()
-    local sfUrl = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100"
-    local success, result = pcall(function()
-        return game:HttpGet(string.format(sfUrl, game.PlaceId))
-    end)
-    if success then
-        local servers = HttpService:JSONDecode(result)
-        for _, s in pairs(servers.data) do
-            if s.playing < s.maxPlayers and s.id ~= game.JobId then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
-                return
-            end
-        end
-    end
-end
+task.spawn(SendWebhook)
 
 local function GetChar()
     local Char = LocalPlayer.Character
@@ -263,7 +272,7 @@ local function StartShooting()
         local GunObject = GetGunObject(tool)
         local GunHandle = require(ReplicatedStorage.Modules.GunHandle)
         if GunObject then
-            spawn(function()
+            task.spawn(function()
                 while task.wait() do
                     if getgenv().StopShootingForQuest then 
                         task.wait(0.5)
@@ -294,7 +303,6 @@ local function StartShooting()
                         end
                         if targetNPC and targetNPC:FindFirstChild("Humanoid") and targetNPC.Humanoid.Health <= 0 then
                             getgenv().FishmanKills = getgenv().FishmanKills + 1
-                            print("Kills: " .. getgenv().FishmanKills .. "/5")
                         end
                     end
                 end
@@ -307,7 +315,7 @@ print("Script starting...")
 for _, v in next, getconnections(LocalPlayer.Idled) do v:Disable() end
 if playgame_remote then playgame_remote:FireServer("Main Game") end
 
-spawn(function()
+task.spawn(function()
     while task.wait(2) do
         local stats = GetStatsFolder()
         if stats and stats.Stats.SkillPoints.Value > 0 then
@@ -316,6 +324,7 @@ spawn(function()
     end
 end)
 
+-- Проверка винтовки
 if not HasRifle() then
     print("Checking Peli for Rifle...")
     while not HasRifle() do
@@ -337,6 +346,7 @@ if not HasRifle() then
     end
 end
 
+-- Путешествие на Fishman Island
 print("Rifle Obtained. Proceeding to Fishman Island...")
 local _, hrp = GetChar()
 if not IsPositionOnIsland(hrp.Position, "Fishman Island") then
@@ -346,16 +356,30 @@ if not IsPositionOnIsland(hrp.Position, "Fishman Island") then
     task.wait(1)
     FireDash()
     local _, charRoot = GetChar()
-    if charRoot then charRoot.CFrame = underPos end
+    if charRoot then 
+        charRoot.CFrame = underPos 
+        print("[TELEPORT] Телепортация под карту выполнена. Ожидание 5 секунд для проверки...")
+        
+        task.wait(5) -- Ждем 5 секунд
+        
+        local _, checkRoot = GetChar()
+        if checkRoot and IsPositionOnIsland(checkRoot.Position, "Fishman Island") then
+            print("[SUCCESS] Игрок успешно прибыл на Fishman Island.")
+        else
+            print("[FAIL] Игрок не на Fishman Island после телепорта. Перезахожу...")
+            HopServer()
+            return -- Прерываем выполнение скрипта до перезахода
+        end
+    end
 end
 
-spawn(function()
+task.spawn(function()
     local done = false
     while task.wait(1) do
         local _, charRoot = GetChar()
         if charRoot and IsPositionOnIsland(charRoot.Position, "Fishman Island") and not done then
             done = true
-            print("Confirmed: On Fishman Island.")
+            print("Confirmed: On Fishman Island. Setting Spawn...")
             PathfindTo(Vector3.new(7976.2, -2152.8, -17075.1))
             task.wait(1)
             ReplicatedStorage:WaitForChild("Events"):WaitForChild("SetSpawn"):FireServer()
@@ -369,7 +393,7 @@ spawn(function()
     end
 end)
 
-spawn(function()
+task.spawn(function()
     while task.wait(1) do
         if GetLevel() >= 190 then
             print("Level 190+ detected. Starting Becky Quest Loop.")
