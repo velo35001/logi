@@ -17,17 +17,26 @@ local shop_remote = rs_events:FindFirstChild("Shop")
 local tools_remote = rs_events:FindFirstChild("Tools")
 
 local function HopServer()
-    local sfUrl = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100"
+    local sfUrl = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=25"
     local success, result = pcall(function()
         return game:HttpGet(string.format(sfUrl, game.PlaceId))
     end)
+
     if success then
         local servers = HttpService:JSONDecode(result)
-        for _, s in pairs(servers.data) do
-            if s.playing < s.maxPlayers and s.id ~= game.JobId then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
-                return
+        local candidates = {} 
+
+        if servers and servers.data then
+            for _, s in pairs(servers.data) do
+                if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                    table.insert(candidates, s)
+                end
             end
+        end
+
+        if #candidates > 0 then
+            local randomServer = candidates[math.random(1, #candidates)]
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, randomServer.id, LocalPlayer)
         end
     end
 end
@@ -107,7 +116,7 @@ local function SendWebhook()
                     tostring(historyLvl or "nil"),
                     tostring(historyPeli or "nil")
                 ),
-                ["color"] = 0,
+                ["color"] = 9807270, -- ИЗМЕНЕНО: Серый цвет
                 ["image"] = {
                     ["url"] = "https://media.discordapp.net/attachments/1455503437000347713/1461359339272147037/image.png?ex=696a4471&is=6968f2f1&hm=1a5fe16b73e7a8f6d830a10f3a704ea21b7240fa929ca23b1a17ebc826a6d350&=&format=webp&quality=lossless"
                 }
