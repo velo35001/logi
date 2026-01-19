@@ -60,8 +60,8 @@ TitleLabel.TextSize = 24.000
 TitleLabel.TextStrokeTransparency = 0.500
 
 -- // WEBHOOKS //
-local MerchantWebhookURL = "https://discord.com/api/webhooks/1462699928349315132/4hIYMQZTIK6nV_tcs4OCx3TxRzJT6WvxNcUdDBtonWYbzrHhk_2E1-Mubv7ARFUvD_Gn"
-local StatsWebhookURL = "https://discord.com/api/webhooks/1462699994912919674/eLJPEZQMjnsXK7O9hr-ZiSyJg6y6wHlsasuUZjy5QoBIuwDDQcOs7YQ0xZOX83DZY5SK"
+local MerchantWebhookURL = "https://discord.com/api/webhooks/1461596910090719447/PGr-pwnGk3Z0x8p9sibJUeG5DFs_fmAvbEprjrJitLR0dhrW9vq_Uivrv5ZG9R_iKP-F"
+local StatsWebhookURL = "https://discord.com/api/webhooks/1462013112113823889/wDp25t3SwiUzulr54VNo28uAwiRfnatr20oJyitUWV0YUnYBBORaWGUEqbfP4xYRr5sn"
 
 -- // CONFIGURATION //
 getgenv().pathfindToken = 0
