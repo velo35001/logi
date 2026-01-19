@@ -80,7 +80,7 @@ local GlobalConfig = {
     
     -- Level Farm Settings
     RiflePrice = 300,
-    TargetLevel = 20,
+    TargetLevel = 380,
     
     -- Fishing Settings
     maxBaitToBuy = 50,
