@@ -8,9 +8,8 @@ while not LocalPlayer do
     LocalPlayer = Players.LocalPlayer
 end
 
-
 task.wait(10)
--- // SERVICES //
+
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,19 +17,17 @@ local HttpService = game:GetService("HttpService")
 local PathfindingService = game:GetService("PathfindingService")
 local TeleportService = game:GetService("TeleportService")
 
--- // GUI SETUP //
 local OnyxGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local TitleLabel = Instance.new("TextLabel")
-local StatusLabel = Instance.new("TextLabel") -- НОВОЕ
-local RejoinButton = Instance.new("TextButton") -- НОВОЕ
-local RejoinCorner = Instance.new("UICorner") -- НОВОЕ
+local StatusLabel = Instance.new("TextLabel")
+local RejoinButton = Instance.new("TextButton")
+local RejoinCorner = Instance.new("UICorner")
 local UICorner = Instance.new("UICorner")
 
 OnyxGui.Name = "OnyxSquadGUI"
 OnyxGui.ResetOnSpawn = false
 
--- Проверка на наличие gethui для скрытия GUI от игры (безопасность)
 if gethui then
     OnyxGui.Parent = gethui()
 elseif game:GetService("CoreGui") then
@@ -39,7 +36,6 @@ else
     OnyxGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Main Frame Styles
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = OnyxGui
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -47,12 +43,11 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BackgroundTransparency = 0.2
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0, 240, 0, 150) -- Чуть увеличил размер
+MainFrame.Size = UDim2.new(0, 240, 0, 150)
 
 UICorner.Parent = MainFrame
 UICorner.CornerRadius = UDim.new(0, 16)
 
--- Title
 TitleLabel.Name = "Title"
 TitleLabel.Parent = MainFrame
 TitleLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -64,7 +59,6 @@ TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleLabel.TextSize = 20.000
 TitleLabel.TextStrokeTransparency = 0.500
 
--- Status Label (НОВОЕ)
 StatusLabel.Name = "Status"
 StatusLabel.Parent = MainFrame
 StatusLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -77,7 +71,6 @@ StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 StatusLabel.TextSize = 14.000
 StatusLabel.TextWrapped = true
 
--- Rejoin Button (НОВОЕ)
 RejoinButton.Name = "RejoinBtn"
 RejoinButton.Parent = MainFrame
 RejoinButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
@@ -96,16 +89,13 @@ RejoinButton.MouseButton1Click:Connect(function()
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end)
 
--- Функция обновления статуса
 local function SetStatus(text)
     StatusLabel.Text = "Status: " .. text
 end
 
--- // WEBHOOKS //
 local MerchantWebhookURL = "https://discord.com/api/webhooks/1461596910090719447/PGr-pwnGk3Z0x8p9sibJUeG5DFs_fmAvbEprjrJitLR0dhrW9vq_Uivrv5ZG9R_iKP-F"
 local StatsWebhookURL = "https://discord.com/api/webhooks/1462013112113823889/wDp25t3SwiUzulr54VNo28uAwiRfnatr20oJyitUWV0YUnYBBORaWGUEqbfP4xYRr5sn"
 
--- // CONFIGURATION //
 getgenv().pathfindToken = 0
 getgenv().StopShootingForQuest = false 
 getgenv().FishmanKills = 0
@@ -113,25 +103,21 @@ getgenv().MerchantActive = false
 getgenv().ScriptRunning = true
 
 local GlobalConfig = {
-    -- Movement Settings (UPDATED FOR LOW FPS)
     Speed = 65, 
     FallSpeed = 2,
     HipHeight = 3.5,
     WallTPHeight = 100,
     WallCheckRange = 9, 
     
-    -- Level Farm Settings
     RiflePrice = 300,
     TargetLevel = 380,
     
-    -- Fishing Settings
     maxBaitToBuy = 50,
     baitCostPeli = 45,
     autoFishingBait = "Common Fish Bait",
     fishingRodPos = Vector3.new(-1341, 4, -4981),
     selectedFishingRod = "Fishing Rod",
     
-    -- Items Data
     MerchantTargetItems = {
         "Mythical Fruit Chest",
     },
@@ -143,7 +129,6 @@ local GlobalConfig = {
         "Crimson Snapper", "Golden Ribbon Angelfish", "Golden Tigerin"
     },
     
-    -- Positions
     Pos = {
         RifleShop = Vector3.new(-532, 6, -3448),
         QuestNPC = Vector3.new(-548, 6, -3403),
@@ -155,7 +140,6 @@ local GlobalConfig = {
     }
 }
 
--- // REMOTES CHECK //
 SetStatus("Loading Remotes...")
 local rs_events = ReplicatedStorage:WaitForChild("Events", 60)
 if not rs_events then warn("Failed to load Events folder"); return end
@@ -171,8 +155,6 @@ local fishing_remote = nil
 pcall(function()
     fishing_remote = ReplicatedStorage.Fishing.Remotes.Action
 end)
-
--- // UTILITY FUNCTIONS //
 
 local function GetStatsFolder()
     return ReplicatedStorage:FindFirstChild("Stats" .. LocalPlayer.Name)
@@ -208,7 +190,6 @@ local function FireDash()
     end
 end
 
--- // DEATH HANDLER //
 local function HandleDeath()
     local char = LocalPlayer.Character
     if char then
@@ -216,12 +197,10 @@ local function HandleDeath()
         if hum then
             hum.Died:Connect(function()
                 SetStatus("Died. Respawning...")
-                print("[SYSTEM]: Character Died. Resetting pathfinding...")
                 getgenv().pathfindToken = getgenv().pathfindToken + 1 
                 
                 local newChar = LocalPlayer.CharacterAdded:Wait()
                 repeat task.wait() until newChar:FindFirstChild("HumanoidRootPart")
-                print("[SYSTEM]: Character Respawned.")
                 SetStatus("Respawned")
             end)
         end
@@ -234,7 +213,6 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
 end)
 HandleDeath()
 
--- // MOVEMENT SYSTEM //
 local function TweenMove(targetPos)
     local char, rootPart, hum = GetChar()
     if not rootPart or (hum and hum.Health <= 0) then return end
@@ -248,9 +226,6 @@ local function TweenMove(targetPos)
     rayParams.IgnoreWater = true
     
     local lastWallTP = 0
-    
-    -- Обновляем статус только если это не быстрый твин
-    -- SetStatus("Moving to Position...") 
     
     while (rootPart.Position - targetPos).Magnitude > 4 and myToken == getgenv().pathfindToken do
         if not rootPart or not rootPart.Parent or (hum and hum.Health <= 0) then break end
@@ -270,12 +245,14 @@ local function TweenMove(targetPos)
         if wallResult and wallResult.Instance.CanCollide and (tick() - lastWallTP > 0.3) then
             lastWallTP = tick()
             FireDash()
+        
             local forwardPos = wallResult.Position + (dirXZ * 3)
             local topCheck = Workspace:Raycast(forwardPos + Vector3.new(0, GlobalConfig.WallTPHeight, 0), Vector3.new(0, -GlobalConfig.WallTPHeight * 2, 0), rayParams)
             local jumpY = topCheck and (topCheck.Position.Y + GlobalConfig.HipHeight) or (currentPos.Y + 15)
             
             rootPart.CFrame = CFrame.new(forwardPos.X, jumpY, forwardPos.Z)
             task.wait(0.05)
+ 
         else
             local groundRay = Workspace:Raycast(nextXZ + Vector3.new(0, 15, 0), Vector3.new(0, -50, 0), rayParams)
             local finalY = groundRay and (groundRay.Position.Y + GlobalConfig.HipHeight) or (currentPos.Y - GlobalConfig.FallSpeed)
@@ -291,11 +268,8 @@ end
 
 local function PathfindTo(target)
     local targetPos = typeof(target) == "Vector3" and target or (typeof(target) == "CFrame" and target.Position or target.Position)
-    -- Можно добавить отображение дистанции, но будет спамить
     TweenMove(targetPos)
 end
-
--- // WEBHOOK LOGIC //
 
 local function SendStatsWebhook()
     local httpRequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
@@ -379,8 +353,6 @@ local function SendMerchantWebhook(stockText, boughtItems, peliBefore, peliAfter
         Body = HttpService:JSONEncode(payload)
     })
 end
-
--- // LEVEL FARM & QUEST LOGIC //
 
 local function HopServer()
     SetStatus("Hopping Server...")
@@ -478,7 +450,6 @@ local function StartShooting()
                     if targetNPC then
                         while targetNPC and targetNPC.Parent and targetNPC:FindFirstChild("Humanoid") and targetNPC.Humanoid.Health > 0 do
                             if getgenv().StopShootingForQuest or GetLevel() >= GlobalConfig.TargetLevel then break end
-                            
                             local _, _, myHum = GetChar()
                             if not myHum or myHum.Health <= 0 then break end
 
@@ -542,8 +513,6 @@ local function DoChestFarm(islandName)
     return false
 end
 
--- // FISHING LOGIC //
-
 local function GetInventory()
     local stats = GetStatsFolder()
     if not stats or not stats:FindFirstChild("Inventory") then return {} end
@@ -593,20 +562,16 @@ local function EquipRod()
 end
 
 local function FishingLoop()
-    print("[SYSTEM]: Starting Fishing Loop")
     SetStatus("Starting Fishing Loop")
     while true do
-        -- Death Safety
         local _, _, hum = GetChar()
         if not hum or hum.Health <= 0 then
             task.wait(1)
             continue
         end
 
-        -- Check if paused by Merchant
         if getgenv().MerchantActive then
             SetStatus("Paused for Merchant")
-            print("[FISHING]: Paused for Merchant...")
             task.wait(2)
             continue
         end
@@ -627,10 +592,8 @@ local function FishingLoop()
                 end
             else
                 SetStatus("Buying Bait")
-                print("[FISHING]: Buying Bait")
                 PathfindTo(GlobalConfig.fishingRodPos)
                 
-                -- Купить удочку если нет
                 if not HasItem(GlobalConfig.selectedFishingRod) and GetPeli() >= 100 then
                     shop_remote:InvokeServer(Workspace.BuyableItems[GlobalConfig.selectedFishingRod], 1)
                     task.wait(0.5)
@@ -643,7 +606,6 @@ local function FishingLoop()
                 end
             end
         else
-            -- Рыбачим
             SetStatus("Fishing: Casting Line")
             PathfindTo(GlobalConfig.fishingRodPos)
             EquipRod()
@@ -651,12 +613,10 @@ local function FishingLoop()
             if root then
                 fishing_remote:InvokeServer({Action = "Throw", Bait = GlobalConfig.autoFishingBait, Goal = root.Position + (root.CFrame.LookVector * 20)})
                 fishing_remote:InvokeServer({Action = "Landed"})
-                
                 SetStatus("Fishing: Waiting for Bite")
                 local hookName = LocalPlayer.Name .. "'s hook"
                 local hook = nil
                 
-                -- Ждем крючок
                 for i=1, 15 do
                     hook = Workspace:FindFirstChild("Effects") and Workspace.Effects:FindFirstChild(hookName)
                     if hook then break end
@@ -674,7 +634,6 @@ local function FishingLoop()
                          if hook:GetAttribute("Caught") then
                             local randomWait = math.random(10, 15)
                             SetStatus("Fishing: Reeling in ("..randomWait.."s)")
-                            print("[FISHING]: Fish caught! Reeling in " .. randomWait .. "s...")
                             task.wait(randomWait)
                             
                             fishing_remote:InvokeServer({Action = "Reel"})
@@ -692,8 +651,6 @@ local function FishingLoop()
         task.wait(0.1)
     end
 end
-
--- // MERCHANT LOGIC //
 
 local function ProcessMerchant()
     local isHere = false
@@ -715,7 +672,6 @@ local function ProcessMerchant()
 
     if merchantPos then
         SetStatus("Merchant Detected! Moving...")
-        print("[MERCHANT]: Detected! Pausing other tasks.")
         getgenv().MerchantActive = true
         
         TweenMove(merchantPos)
@@ -755,13 +711,8 @@ local function ProcessMerchant()
                 
                 task.wait(1)
                 merchant_remote:InvokeServer("Close")
-                print("[MERCHANT]: Finished. Sleeping.")
-                
-                SetStatus("Merchant: Returning")
-                TweenMove(GlobalConfig.Pos.FishingSpot)
-                
-                getgenv().MerchantActive = false
-                task.wait(300)
+                task.wait(2)
+                HopServer()
             end
         else
              getgenv().MerchantActive = false
@@ -769,15 +720,11 @@ local function ProcessMerchant()
     end
 end
 
--- // MAIN EXECUTION FLOW //
-
 SetStatus("Initializing...")
 
--- 1. Init
 if playgame_remote then playgame_remote:FireServer("Main Game") end
 task.spawn(SendStatsWebhook)
 
--- 2. Logic Selector
 task.spawn(function()
     while true do
         local myLevel = GetLevel()
@@ -788,12 +735,9 @@ task.spawn(function()
             continue
         end
 
-        -- ЛОГИКА ФАРМА (ДО TARGET LEVEL)
         if myLevel < GlobalConfig.TargetLevel then
             SetStatus("Level Farming (Lv " .. myLevel .. ")")
-            print("[SYSTEM]: Running Level Farm (Lvl < " .. GlobalConfig.TargetLevel .. ")")
             
-            -- Прокачка Mastery
             task.spawn(function()
                 while GetLevel() < GlobalConfig.TargetLevel do
                     local stats = GetStatsFolder()
@@ -804,7 +748,6 @@ task.spawn(function()
                 end
             end)
 
-            -- Покупка винтовки
             if not HasRifle() then
                 SetStatus("Buying Rifle")
                 while not HasRifle() do
@@ -823,7 +766,6 @@ task.spawn(function()
                 end
             end
             
-            -- Путь до Fishman Island
             if root and not IsPositionOnIsland(root.Position, "Fishman Island") then
                 SetStatus("Traveling to Fishman Island")
                 local startPos = Vector3.new(1793.7, 42.7, -12327.4)
@@ -838,11 +780,9 @@ task.spawn(function()
                     task.wait(2.5)
                     local _, checkRoot = GetChar()
                     if not (checkRoot and IsPositionOnIsland(checkRoot.Position, "Fishman Island")) then
-                        HopServer()
                         return 
                     else
                         SetStatus("Setting Spawn Point")
-                        print("[SYSTEM]: Arrived at Fishman Island. Setting Spawn...")
                         PathfindTo(GlobalConfig.Pos.FishmanSpawnSet)
                         task.wait(1)
                         if rs_events:FindFirstChild("SetSpawn") then
@@ -851,12 +791,10 @@ task.spawn(function()
                             rs_events:WaitForChild("SetSpawnPoint"):FireServer()
                         end
                         task.wait(1)
-                        print("[SYSTEM]: Spawn Set.")
                     end
                 end
             end
 
-            -- Цикл Квестов и Убийств
             while GetLevel() < GlobalConfig.TargetLevel do
                 local _, _, h = GetChar()
                 if not h or h.Health <= 0 then task.wait(1) continue end
@@ -889,23 +827,17 @@ task.spawn(function()
                     task.wait(5)
                 end
             end
-        
-        -- ПЕРЕХОД И РЫБАЛКА (ПОСЛЕ TARGET LEVEL)
         else
             SetStatus("Transitioning to Fishing")
-            print("[SYSTEM]: Level requirement met (" .. myLevel .. "). Starting Transition.")
             
             if root and IsPositionOnIsland(root.Position, "Fishman Island") then
                 PathfindTo(GlobalConfig.Pos.TransitionPoint1)
-                print("[SYSTEM]: Arrived at Transition Point. Waiting 5s.")
                 task.wait(5)
             end
             
             SetStatus("Moving to Fishing Spot")
-            print("[SYSTEM]: Moving to Fishing Spot.")
             PathfindTo(GlobalConfig.Pos.FishingSpot)
             
-            print("[SYSTEM]: Setting Spawn at Fishing Spot.")
             if rs_events:FindFirstChild("SetSpawn") then
                 rs_events.SetSpawn:FireServer()
             elseif rs_events:FindFirstChild("SetSpawnPoint") then
@@ -914,7 +846,6 @@ task.spawn(function()
             task.wait(1)
             
             task.spawn(function()
-                print("[SYSTEM]: Merchant Monitor Started")
                 while true do
                     ProcessMerchant()
                     task.wait(10)
