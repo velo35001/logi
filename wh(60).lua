@@ -356,7 +356,7 @@ end
 
 local function HopServer()
     SetStatus("Hopping Server...")
-    local sfUrl = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=25"
+    local sfUrl = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100"
     local success, result = pcall(function() return game:HttpGet(string.format(sfUrl, game.PlaceId)) end)
     if success then
         local servers = HttpService:JSONDecode(result)
