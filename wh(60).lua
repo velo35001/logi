@@ -107,7 +107,7 @@ local GlobalConfig = {
     FallSpeed = 2,
     HipHeight = 3.5,
     WallTPHeight = 100,
-    WallCheckRange = 12, 
+    WallCheckRange = 15, 
     
     RiflePrice = 300,
     TargetLevel = 380,
