@@ -103,11 +103,11 @@ getgenv().MerchantActive = false
 getgenv().ScriptRunning = true
 
 local GlobalConfig = {
-    Speed = 65, 
+    Speed = 55, 
     FallSpeed = 2,
     HipHeight = 3.5,
     WallTPHeight = 100,
-    WallCheckRange = 15, 
+    WallCheckRange = 13, 
     
     RiflePrice = 300,
     TargetLevel = 380,
@@ -466,7 +466,7 @@ local function StartShooting()
                                         joe = "true",
                                         Position = targetNPC.Head.Position
                                     }}
-                                    ReplicatedStorage.Events.CIcklcon:FireServer(unpack(args))
+                                    ReplicatedStorage.Events.GunManager:FireServer(unpack(args))
                                     GunObject.Reloaded = false
                                 end
                             end
@@ -770,27 +770,48 @@ task.spawn(function()
                 SetStatus("Traveling to Fishman Island")
                 local startPos = Vector3.new(1793.7, 42.7, -12327.4)
                 local underPos = CFrame.new(1793.7, -92.7, -12327.4)
+                
                 PathfindTo(startPos)
-                task.wait(1)
-                FireDash()
-                task.wait(0.2)
-                local _, charRoot = GetChar()
-                if charRoot then 
-                    charRoot.CFrame = underPos 
-                    task.wait(2.5)
-                    local _, checkRoot = GetChar()
-                    if not (checkRoot and IsPositionOnIsland(checkRoot.Position, "Fishman Island")) then
-                        return 
-                    else
-                        SetStatus("Setting Spawn Point")
-                        PathfindTo(GlobalConfig.Pos.FishmanSpawnSet)
-                        task.wait(1)
-                        if rs_events:FindFirstChild("SetSpawn") then
-                            rs_events:WaitForChild("SetSpawn"):FireServer()
-                        elseif rs_events:FindFirstChild("SetSpawnPoint") then
-                            rs_events:WaitForChild("SetSpawnPoint"):FireServer()
+                
+                local _, currentRoot = GetChar()
+                if currentRoot then
+                    local maxWaitTime = 30 
+                    local startTime = tick()
+                    
+                    while (currentRoot.Position - startPos).Magnitude > 10 and (tick() - startTime) < maxWaitTime do
+                        task.wait(0.5)
+                        _, currentRoot = GetChar()
+                        if not currentRoot then break end
+                        SetStatus("Moving to teleport point... Distance: " .. math.floor((currentRoot.Position - startPos).Magnitude))
+                    end
+                    
+                    if currentRoot and (currentRoot.Position - startPos).Magnitude <= 10 then
+                        SetStatus("Teleporting underwater to Fishman Island")
+                        FireDash()
+                        task.wait(0.2)
+                        currentRoot.CFrame = underPos 
+                        task.wait(2.5)
+                        
+                        local _, checkRoot = GetChar()
+                        if not (checkRoot and IsPositionOnIsland(checkRoot.Position, "Fishman Island")) then
+                            SetStatus("Teleport failed, trying alternative route")
+                            PathfindTo(GlobalConfig.Pos.FishmanSpawnSet)
+                            task.wait(2)
+                        else
+                            SetStatus("Setting Spawn Point")
+                            PathfindTo(GlobalConfig.Pos.FishmanSpawnSet)
+                            task.wait(1)
+                            if rs_events:FindFirstChild("SetSpawn") then
+                                rs_events:WaitForChild("SetSpawn"):FireServer()
+                            elseif rs_events:FindFirstChild("SetSpawnPoint") then
+                                rs_events:WaitForChild("SetSpawnPoint"):FireServer()
+                            end
+                            task.wait(1)
                         end
-                        task.wait(1)
+                    else
+                        SetStatus("Failed to reach teleport point, using direct path")
+                        PathfindTo(GlobalConfig.Pos.FishmanSpawnSet)
+                        task.wait(2)
                     end
                 end
             end
